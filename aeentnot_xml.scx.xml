@@ -1,0 +1,5842 @@
+<?xml version = "1.0" encoding="UTF-8" standalone="yes"?>
+<VFPData>
+	<record>
+		<platform>COMMENT</platform>
+		<uniqueid>Screen</uniqueid>
+		<timestamp>0</timestamp>
+		<class/>
+		<classloc/>
+		<baseclass/>
+		<objname/>
+		<parent/>
+		<properties/>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1>VERSION =   3.00</reserved1>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122599823</timestamp>
+		<class>dataenvironment</class>
+		<classloc/>
+		<baseclass>dataenvironment</baseclass>
+		<objname>Dataenvironment</objname>
+		<parent/>
+		<properties>Top = 220
+Left = 1
+Width = 520
+Height = 200
+DataSource = .NULL.
+Name = "Dataenvironment"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2>1</reserved2>
+		<reserved3/>
+		<reserved4>1</reserved4>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1N</uniqueid>
+		<timestamp>1331190132</timestamp>
+		<class>swform</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>form</baseclass>
+		<objname>AEENTNOT_XML</objname>
+		<parent/>
+		<properties>DataSession = 1
+Height = 562
+Width = 1006
+DoCreate = .T.
+AutoCenter = .T.
+Caption = "Importação dos dados de XML NFe e Cte"
+Closable = .T.
+Enabled = .T.
+Icon = ..\..\bitmaps\aestoque.ico
+KeyPreview = .T.
+WindowType = 1
+AlwaysOnTop = .T.
+BackColor = 192,192,192
+arquivo = 
+especie_tela = .F.
+xml_nota =  
+Name = "AEENTNOT_XML"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Init
+PARAMETERS m.especie_tela
+Swform::init()
+ThisForm.especie_tela=m.especie_tela
+SELECT resumoe
+SET  ORDER TO 2
+SELECT item
+SET RELATION TO item.cprod_2 INTO resumoe
+ThisForm.EntCondi.SetFocus()
+IF CPcodigoempresa="03862926000184" &amp;&amp;jrc
+	IF m.entpedido='000000'
+		m.entpedido=''
+	endif
+	thisform.shpeanodc.Visible=.t.
+	thisform.lblshapeodc.Visible=.t.
+	thisform.shcodfab.Visible=.t.
+	thisform.lblcodfab.Visible=.t.
+	thisform.cmd_verinfoprod.Visible=.t.
+	thisform.lbl_pedidocompra.Visible=.t.
+	thisform.lbl_no_pedidocompra.Visible=.t.
+	thisform.lbl_no_pedidocompra.Caption=m.entpedido
+	SELECT item
+	IF RECCOUNT()&gt;0
+		SCAN
+			SCATTER MEMVAR memo
+			m.ean_localizado=thisform.locprod(ALLTRIM(item.ean,item.cprod))
+			m.pcomp_localizado=thisform.ajusta_itens_odc(ALLTRIM(item.ean,item.cprod))
+			SELECT ITEM
+			=loopgrav(.f.)
+		endscan
+	ENDIF
+	SELECT ITEM
+	GO TOP
+	THISFORM.tabela.Refresh()
+
+	SELECT Produto1
+	SET ORDER TO 1
+	SELECT produto
+	SET RELATION TO CPFilialusu+produto.procodigo INTO produto1
+	SET FILTER TO produto1.prosituacao#1
+endif
+ENDPROC
+PROCEDURE KeyPress
+LPARAMETERS nKeyCode, nShiftAltCtrl
+IF nKeyCode=-2
+	Thisform.cmdvincular.Click()
+ENDIF
+ENDPROC
+PROCEDURE Load
+SWform::LOAD()
+
+ENDPROC
+PROCEDURE Unload
+SELECT produto
+SET RELATION TO
+SET FILTER TO
+RETURN ThisForm.xml_nota
+ENDPROC
+PROCEDURE ajusta_itens_odc
+PARAMETERS m.ean_param,m.cprod
+m.ean_localizado=thisform.locprod(m.ean_param,m.cprod)
+if m.ean_localizado=0 .or. EMPTY(m.entpedido)
+	m.pcomp_localizado=0
+ELSE
+	SELECT pedido2
+	SET ORDER TO 1
+	SEEK m.entpedido+produto.procodigo+produto.prodigito
+	IF FOUND()
+		m.pcomp_localizado=1
+	ELSE
+		m.pcomp_localizado=2
+	ENDIF
+ENDIF
+RETURN m.pcomp_localizado
+ENDPROC
+PROCEDURE ajustando_valores
+SELECT item
+SCAN
+	SELECT resumoe
+	SET ORDER TO codigo_f
+	SEEK ALLTRIM(item.cprod_2)
+	m.totalvinculado_conf=0
+	m.icmstpro_conf=0
+	m.ipi_conf=0
+	m.baseicmst_conf=0
+	SCAN WHILE ALLTRIM(item.cprod_2)=ALLTRIM(resumoe.codigofabricante)
+		m.totalvinculado_conf=m.totalvinculado_conf+(resumoe.quanti*resumoe.unitario)
+		m.icmstpro_conf=m.icmstpro_conf+resumoe.icmstpro
+		m.ipi_conf=m.ipi_conf+resumoe.ipi
+		REPLACE totalitem WITH ROUND((resumoe.Quanti*resumoe.Unitario)-resumoe.DESCONTO,2)
+	ENDSCAN
+	SELECT item
+	REPLACE vprod_conf WITH m.totalvinculado_conf
+	REPLACE icms_vICMSST_conf WITH m.icmstpro_conf
+	REPLACE ipi_vIPI_conf WITH m.ipi_conf
+	REPLACE icms_vbcst_CONF WITH m.baseicmst_conf
+ENDSCAN
+*Thisform.Tabela2.Refresh()
+
+ENDPROC
+PROCEDURE getqtditem_odc
+PARAMETERS m.ean_param,m.cprod
+m.ean_localizado=thisform.locprod(m.ean_param,m.cprod)
+if m.ean_localizado=0 .or. EMPTY(m.entpedido)
+	RETURN -1
+ELSE
+	SELECT pedido2
+	SET ORDER TO 1
+	SEEK m.entpedido+produto.procodigo+produto.prodigito
+	IF FOUND()
+		RETURN pedido2.pedquant
+	ELSE
+		RETURN -1
+	ENDIF
+ENDIF
+
+ENDPROC
+PROCEDURE importar_cte
+m.tpAmb=SUBSTR(cRedist,AT('&lt;tpAmb&gt;',cRedist)+LEN('&lt;tpAmb&gt;'),AT('&lt;/tpAmb&gt;',cRedist)-AT('&lt;tpAmb&gt;',cRedist)-LEN('&lt;/tpAmb&gt;')+1)
+m.chave=''
+m.tpAmb='1' &amp;&amp;&amp; Retirar depois dos testes
+IF m.tpAmb='1'
+	m.chave=SUBSTR(cRedist,AT('&lt;chCTe&gt;',cRedist)+LEN('&lt;chCTe&gt;'),AT('&lt;/chCTe&gt;',cRedist)-AT('&lt;chCTe&gt;',cRedist)-LEN('&lt;/chCTe&gt;')+1)
+	IF EMPTY(m.chave)
+		=MESSAGEBOX('Atenção!!! Não foi localizado do numero da Chave da NFe.Verifique o conteúdo do XML por favor ele PODE estar inválido.',0+16,CPnomesys2)
+		m.okteste=.f.
+		RETURN
+	ENDIF
+ELSE	
+	=MESSAGEBOX('Atenção!!! Não vai ser possível importar os dados desta nota.Foi emitida em ambiente de TESTE.',0+16,CPnomesys2)
+	m.okteste=.f.
+	RETURN
+ENDIF	
+m.crt=''
+m.dhEmi=SUBSTR(cRedist,AT('&lt;dhEmi&gt;',cRedist)+LEN('&lt;dhEmi&gt;'),AT('&lt;/dhEmi&gt;',cRedist)-AT('&lt;dhEmi&gt;',cRedist)-LEN('&lt;/dhEmi&gt;')+1)
+m.dhEmi=(SUBSTR(m.dhEmi,9,2)+'-'+SUBSTR(m.dhEmi,6,2)+'-'+SUBSTR(m.dhEmi,1,4))
+m.demi=CTOD(m.dhEmi)
+*m.dest=SUBSTR(cRedist,AT('&lt;dest&gt;',cRedist)+LEN('&lt;dest&gt;'),AT('&lt;/dest&gt;',cRedist)-AT('&lt;dest&gt;',cRedist)-LEN('&lt;/dest&gt;')+1)
+m.ide=SUBSTR(cRedist,AT('&lt;ide&gt;',cRedist)+LEN('&lt;ide&gt;'),AT('&lt;/ide&gt;',cRedist)-AT('&lt;ide&gt;',cRedist)-LEN('&lt;/ide&gt;')+1)
+m.toma=SUBSTR(ide,AT('&lt;toma&gt;',ide)+LEN('&lt;toma&gt;'),AT('&lt;/toma&gt;',ide)-AT('&lt;toma&gt;',ide)-LEN('&lt;/toma&gt;')+1)
+m.tomador=''
+DO CASE
+	CASE m.toma='0'
+		m.tomador=SUBSTR(cRedist,AT('&lt;rem&gt;',cRedist)+LEN('&lt;rem&gt;'),AT('&lt;/rem&gt;',cRedist)-AT('&lt;rem&gt;',cRedist)-LEN('&lt;/rem&gt;')+1)
+	CASE m.toma='1'
+		m.tomador=SUBSTR(cRedist,AT('&lt;exped&gt;',cRedist)+LEN('&lt;exped&gt;'),AT('&lt;/exped&gt;',cRedist)-AT('&lt;exped&gt;',cRedist)-LEN('&lt;/exped&gt;')+1)
+	CASE m.toma='2'
+		m.tomador=SUBSTR(cRedist,AT('&lt;receb&gt;',cRedist)+LEN('&lt;receb&gt;'),AT('&lt;/receb&gt;',cRedist)-AT('&lt;receb&gt;',cRedist)-LEN('&lt;/receb&gt;')+1)
+	CASE m.toma='3'
+		m.tomador=SUBSTR(cRedist,AT('&lt;dest&gt;',cRedist)+LEN('&lt;dest&gt;'),AT('&lt;/dest&gt;',cRedist)-AT('&lt;dest&gt;',cRedist)-LEN('&lt;/dest&gt;')+1)
+	CASE m.toma='4'
+		m.tomador=SUBSTR(cRedist,AT('&lt;toma4&gt;',cRedist)+LEN('&lt;toma4&gt;'),AT('&lt;/toma4&gt;',cRedist)-AT('&lt;toma4&gt;',cRedist)-LEN('&lt;/toma4&gt;')+1)
+ENDCASE
+m.cnpj=''
+IF .NOT. EMPTY(m.tomador)
+	m.cnpj=SUBSTR(tomador,AT('&lt;CNPJ&gt;',tomador)+LEN('&lt;CNPJ&gt;'),AT('&lt;/CNPJ&gt;',tomador)-AT('&lt;CNPJ&gt;',tomador)-LEN('&lt;/CNPJ&gt;')+1)
+	m.xnome=SUBSTR(tomador,AT('&lt;xNome&gt;',tomador)+LEN('&lt;xNome&gt;'),AT('&lt;/xNome&gt;',tomador)-AT('&lt;xNome&gt;',tomador)-LEN('&lt;/xNome&gt;')+1)
+ENDIF	
+SELECT filial
+SET ORDER TO 1
+SEEK CPFilialusu
+IF m.cnpj#Eliponto(filial.filcnpj)
+	=MESSAGEBOX('Atenção!!! Esta NFe não foi emitida para este CNPJ. Destinatário do XML:'+m.cnpj+' '+m.xnome,0+16,CPnomesys2)
+	m.okteste=.f.
+	RETURN
+ENDIF
+m.emit=SUBSTR(cRedist,AT('&lt;emit&gt;',cRedist)+LEN('&lt;emit&gt;'),AT('&lt;/emit&gt;',cRedist)-AT('&lt;emit&gt;',cRedist)-LEN('&lt;/emit&gt;')+1)
+IF .NOT. EMPTY(m.emit)
+	m.cnpj=SUBSTR(emit,AT('&lt;CNPJ&gt;',emit)+LEN('&lt;CNPJ&gt;'),AT('&lt;/CNPJ&gt;',emit)-AT('&lt;CNPJ&gt;',emit)-LEN('&lt;/CNPJ&gt;')+1)
+	m.ie=SUBSTR(emit,AT('&lt;IE&gt;',emit)+LEN('&lt;IE&gt;'),AT('&lt;/IE&gt;',emit)-AT('&lt;IE&gt;',emit)-LEN('&lt;/IE&gt;')+1)
+	m.xnome=SUBSTR(emit,AT('&lt;xNome&gt;',emit)+LEN('&lt;xNome&gt;'),AT('&lt;/xNome&gt;',emit)-AT('&lt;xNome&gt;',emit)-LEN('&lt;/xNome&gt;')+1)
+	m.xfant_opc=''
+	m.fone_opc=SUBSTR(emit,AT('&lt;fone&gt;',emit)+LEN('&lt;fone&gt;'),AT('&lt;/fone&gt;',emit)-AT('&lt;fone&gt;',emit)-LEN('&lt;/fone&gt;')+1)
+	m.xlgr=SUBSTR(emit,AT('&lt;xLgr&gt;',emit)+LEN('&lt;xLgr&gt;'),AT('&lt;/xLgr&gt;',emit)-AT('&lt;xLgr&gt;',emit)-LEN('&lt;/xLgr&gt;')+1)
+	m.nro=SUBSTR(emit,AT('&lt;nro&gt;',emit)+LEN('&lt;nro&gt;'),AT('&lt;/nro&gt;',emit)-AT('&lt;nro&gt;',emit)-LEN('&lt;/nro&gt;')+1)
+	m.xcpl_opc=SUBSTR(emit,AT('&lt;xCpl&gt;',emit)+LEN('&lt;xCpl&gt;'),AT('&lt;/xCpl&gt;',emit)-AT('&lt;xCpl&gt;',emit)-LEN('&lt;/xCpl&gt;')+1)
+	m.xbairro=SUBSTR(emit,AT('&lt;xBairro&gt;',emit)+LEN('&lt;xBairro&gt;'),AT('&lt;/xBairro&gt;',emit)-AT('&lt;xBairro&gt;',emit)-LEN('&lt;/xBairro&gt;')+1)
+	m.cmun=SUBSTR(emit,AT('&lt;cMun&gt;',emit)+LEN('&lt;cMun&gt;'),AT('&lt;/cMun&gt;',emit)-AT('&lt;cMun&gt;',emit)-LEN('&lt;/cMun&gt;')+1)
+	m.xmun=SUBSTR(emit,AT('&lt;xMun&gt;',emit)+LEN('&lt;xMun&gt;'),AT('&lt;/xMun&gt;',emit)-AT('&lt;xMun&gt;',emit)-LEN('&lt;/xMun&gt;')+1)
+	m.cep_opc=SUBSTR(emit,AT('&lt;CEP&gt;',emit)+LEN('&lt;CEP&gt;'),AT('&lt;/CEP&gt;',emit)-AT('&lt;CEP&gt;',emit)-LEN('&lt;/CEP&gt;')+1)
+	m.uf=SUBSTR(emit,AT('&lt;UF&gt;',emit)+LEN('&lt;UF&gt;'),AT('&lt;/UF&gt;',emit)-AT('&lt;UF&gt;',emit)-LEN('&lt;/UF&gt;')+1)
+	m.email_opc=SUBSTR(emit,AT('&lt;eMail&gt;',emit)+LEN('&lt;eMail&gt;'),AT('&lt;/eMail&gt;',emit)-AT('&lt;eMail&gt;',emit)-LEN('&lt;/eMail&gt;')+1)
+	m.xpais=SUBSTR(emit,AT('&lt;xPais&gt;',emit)+LEN('&lt;xPais&gt;'),AT('&lt;/xPais&gt;',emit)-AT('&lt;xPais&gt;',emit)-LEN('&lt;/xPais&gt;')+1)
+	SELECT cliente
+	SET ORDER TO 5
+	SEEK ALLTRIM(m.cnpj)
+	IF .not. FOUND()
+		IF MESSAGEBOX('Não foi localizado o remetente desta NFe Cadastrado. Deseja fazer o cadastro?',4+32,CPnomesys2)=6
+			DO FORM ficadcli WITH '',m.emit+m.crt
+		ENDIF
+	ENDIF
+	SELECT cliente
+	SET ORDER TO 5
+	SEEK ALLTRIM(m.cnpj)
+	IF .NOT. FOUND()
+		=MESSAGEBOX('Não foi localizado o remetente desta NFe.',0+16,CPnomesys2)
+	ELSE 	
+		IF cliente.clisituacao&lt;=1
+			ThisForm.EntFornec.Value=cliente.clicodigo
+			ThisForm.Nomefor.Value=cliente.clinome
+			ThisForm.cnPJ.Value=m.cnpj
+		ELSE
+			m.codigolocalizado=cliente.clicodigo
+			SELECT cliente
+			SET ORDER TO 5
+			SEEK ALLTRIM(m.cnpj)
+			SCAN WHILE ALLTRIM(m.cnpj)=ALLTRIM(cliente.clicpf_cnpj)
+				IF cliente.clisituacao&lt;=1
+					ThisForm.EntFornec.Value=cliente.clicodigo
+					ThisForm.Nomefor.Value=cliente.clinome
+					ThisForm.cnPJ.Value=m.cnpj
+					EXIT
+				ENDIF
+			ENDSCAN 	
+			IF EMPTY(ThisForm.EntFornec.Value)
+				=MESSAGEBOX('Atenção!!! Foi localizado do fornecedor com o código:.'+cliente.clicodigo+', mas a situação esta como inativo.',0+16,CPnomesys2)
+				m.okteste=.f.
+				RETURN		
+			ENDIF 			
+		ENDIF 	
+	ENDIF
+	IF m.okteste
+		m.vprest=SUBSTR(cRedist,AT('&lt;vPrest&gt;',cRedist)+LEN('&lt;vPrest&gt;'),AT('&lt;/vPrest&gt;',cRedist)-AT('&lt;vPrest&gt;',cRedist)-LEN('&lt;/vPrest&gt;')+1)
+		m.vNF=VAL(SUBSTR(vprest,AT('&lt;vTPrest&gt;',vprest)+LEN('&lt;vTPrest&gt;'),AT('&lt;/vTPrest&gt;',vprest)-AT('&lt;vTPrest&gt;',vprest)-LEN('&lt;/vTPrest&gt;')+1)) &amp;&amp;o valor unitario vai ser a base do icms
+		m.vBCST=0
+		m.vST=0
+		m.vFrete=0
+		m.vSeg=0
+		m.vDesc=0
+		m.ide=SUBSTR(cRedist,AT('&lt;ide&gt;',cRedist)+LEN('&lt;ide&gt;'),AT('&lt;/ide&gt;',cRedist)-AT('&lt;ide&gt;',cRedist)-LEN('&lt;/ide&gt;')+1)
+		m.nnf=SUBSTR(m.ide,AT('&lt;nCT&gt;',m.ide)+LEN('&lt;nCT&gt;'),AT('&lt;/nCT&gt;',m.ide)-AT('&lt;nCT&gt;',m.ide)-LEN('&lt;/nCT&gt;')+1)
+		m.serie=SUBSTR(m.ide,AT('&lt;serie&gt;',m.ide)+LEN('&lt;serie&gt;'),AT('&lt;/serie&gt;',m.ide)-AT('&lt;serie&gt;',m.ide)-LEN('&lt;/serie&gt;')+1)
+		ThisForm.entchave_nfe.Value=m.chave
+		ThisForm.EntdataEmi.Value=m.demi
+		ThisForm.entdataEnt.Value=DATE()
+		ThisForm.entbasest.Value=m.vBCST
+		Thisform.enticmsubs.Value=m.vST
+		ThisForm.vlrNota.Value=m.vNF
+		*ThisForm.entdescNot.Value=m.vDesc
+		ThisForm.entacrescimo.Value=0
+		ThisForm.entnr_nota.Value=Strzero(VAL(RIGHT(m.nnf,6)),6)
+		Thisform.entserie.Value=m.serie
+		ThisForm.entmodelo.Value=25
+		AeEntNot.SwPagFra1.Page1.VlrNota.Value=m.vNF
+		AeEntNot.swpagFRA1.page1.vlrTotal.Value=0
+		AeEntNot.swpagFRA1.page1.totalipi.Value=0
+		AeEntNot.swpagFRA1.page1.valoricm.Value=0
+		AeEntNot.swpagFRA1.page1.subtotal.Value=0
+		*-
+		m.EntNr_nota=Strzero(VAL(m.nnf),9)
+		m.EntNr_nota=RIGHT(m.EntNr_nota,6)
+		m.EntSerie=AjustaTamanho(m.serie,LEN(entranota1.entserie))
+		m.entfornec=ThisForm.EntFornec.Value
+		SELE Entranota1
+	    SET ORDER TO 1
+	    SEEK CPfilialusu+m.EntNr_nota+m.EntSerie+m.entfornec
+		IF FOUND()
+			=MESSAGEBOX("Já existe Nota Lançada com este Numero.Não vai ser possível importar esta nota.Se necessário exclua o lançamento anterior.",0+16,CPnomesys)
+			m.okteste=.f.
+			RETURN
+		ENDIF	
+	    IF CPcodigoempresa="05138688000275" .and. NPacesso=3
+	      *set step on
+	      CPfilialusuGRM="01"
+	      SELE entranota2
+	      SET ORDER TO 1
+	      SEEK CPfilialusuGRM+m.EntNr_nota+m.EntSerie+m.entfornec
+	      IF FOUND()
+			SELE filial
+			SET ORDER TO 1
+			SEEK CPfilialusuGRM
+			=MESSAGEBOX("Já existe Nota Lançada com este Numero.Não vai ser possível importar esta nota.Se necessário exclua o lançamento anterior.",0+16,CPnomesys)
+			m.okteste=.f.
+			RETURN
+		  ENDIF		
+	    ENDIF
+		*-
+		SELECT item
+		DELETE ALL
+		SELECT resumoe
+		DELETE ALL
+		*ThisForm.Importar_itens()
+		*m.detitem=SUBSTR(cRedist,AT('&lt;det nItem',cRedist,m.contaocorrencia)+LEN('&lt;det nItem'),AT('&lt;/det&gt;',cRedist,m.contaocorrencia)-AT('&lt;det nItem',cRedist,m.contaocorrencia)-LEN('&lt;/det&gt;')+1)						
+		m.imp=SUBSTR(cRedist,AT('&lt;imp&gt;',cRedist)+LEN('&lt;imp&gt;'),AT('&lt;/imp&gt;',cRedist)-AT('&lt;imp&gt;',cRedist)-LEN('&lt;/imp&gt;')+1)
+		m.icms=SUBSTR(m.imp,AT('&lt;ICMS&gt;',m.imp)+LEN('&lt;ICMS&gt;'),AT('&lt;/ICMS&gt;',m.imp)-AT('&lt;ICMS&gt;',m.imp)-LEN('&lt;/ICMS&gt;')+1)
+		m.xProd='Valor do Frete'
+		m.nnf=SUBSTR(m.ide,AT('&lt;nCT&gt;',m.ide)+LEN('&lt;nCT&gt;'),AT('&lt;/nCT&gt;',m.ide)-AT('&lt;nCT&gt;',m.ide)-LEN('&lt;/nCT&gt;')+1)
+		m.cprod='001'
+		m.cfop=SUBSTR(m.ide,AT('&lt;CFOP&gt;',m.ide)+LEN('&lt;CFOP&gt;'),AT('&lt;/CFOP&gt;',m.ide)-AT('&lt;CFOP&gt;',m.ide)-LEN('&lt;/CFOP&gt;')+1)
+		m.utrib='UN'
+		m.qtrib=1
+		m.ean=''
+		m.ncm=''
+		m.vuntrib=VAL(SUBSTR(m.icms,AT('&lt;vBC&gt;',m.icms)+LEN('&lt;vBC&gt;'),AT('&lt;/vBC&gt;',m.icms)-AT('&lt;vBC&gt;',m.icms)-LEN('&lt;/vBC&gt;')+1)) &amp;&amp;o valor unitario vai ser a base do icms
+		IF m.vuntrib=0
+			m.vuntrib=m.vNF
+		ENDIF
+		m.qcom=1
+		m.vuncom=1
+		m.cProdANP=''
+		m.vdesc=0
+		m.ucom='UN'
+		m.icms_vbc=VAL(SUBSTR(m.icms,AT('&lt;vBC&gt;',m.icms)+LEN('&lt;vBC&gt;'),AT('&lt;/vBC&gt;',m.icms)-AT('&lt;vBC&gt;',m.icms)-LEN('&lt;/vBC&gt;')+1))	
+		m.icms_cst=SUBSTR(m.icms,AT('&lt;CST&gt;',m.icms)+LEN('&lt;CST&gt;'),AT('&lt;/CST&gt;',m.icms)-AT('&lt;CST&gt;',m.icms)-LEN('&lt;/CST&gt;')+1)
+		m.icms_picms=VAL(SUBSTR(m.icms,AT('&lt;pICMS&gt;',m.icms)+LEN('&lt;pICMS&gt;'),AT('&lt;/pICMS&gt;',m.icms)-AT('&lt;pICMS&gt;',m.icms)-LEN('&lt;/pICMS&gt;')+1))	
+		m.orig=0
+		m.icms_vicms=VAL(SUBSTR(m.icms,AT('&lt;vICMS&gt;',m.icms)+LEN('&lt;vICMS&gt;'),AT('&lt;/vICMS&gt;',m.icms)-AT('&lt;vICMS&gt;',m.icms)-LEN('&lt;/vICMS&gt;')+1))	
+		m.classe=''
+		m.icms_pmvast=0
+		m.icms_predbcst=0
+		m.icms_vbcst=0
+		m.icms_picmsst=0
+		m.icms_vicmsst=0
+		m.icms_modbcst=''
+		m.icms_predbc=0
+		m.icms_modbc=0
+		m.ipi_pipi=0
+		m.ipi_vipi=0
+		m.ipi_vbc=0
+		m.ipi_cst=''
+		m.vunid=m.vuntrib
+		m.qunid=1
+		m.vprod=m.vuntrib
+		m.vDesc=0
+		*m.pis=SUBSTR(m.detitem,AT('&lt;PIS&gt;',m.detitem)+LEN('&lt;PIS&gt;'),AT('&lt;/PIS&gt;',m.detitem)-AT('&lt;PIS&gt;',m.detitem)-LEN('&lt;/PIS&gt;')+1)
+		m.pis_cst=''
+		m.pis_vbc=0
+		m.pis_ppis=0
+		m.pis_vpis=0
+		*m.confis=SUBSTR(m.detitem,AT('&lt;COFINS&gt;',m.detitem)+LEN('&lt;COFINS&gt;'),AT('&lt;/COFINS&gt;',m.detitem)-AT('&lt;COFINS&gt;',m.detitem)-LEN('&lt;/COFINS&gt;')+1)
+		m.confis_cst=''
+		m.confis_vbc=0
+		m.confis_pconfins=0
+		m.confis_vconfins=0
+		m.ipi_vIPI=0
+		m.totalvinculado=0
+		m.vprod=m.vprod+m.vDesc
+		SELECT item
+		APPEND BLANK
+		GATHER MEMVAR memo
+		ThisForm.Tabela.Refresh()
+		ThisForm.cmdvincular.Click()
+	ENDIF
+ENDIF
+
+ENDPROC
+PROCEDURE importar_itens
+m.qtdocorrencia=OCCURS('det nItem',cRedist)
+m.xipi=0
+FOR m.contaocorrencia=1 TO m.qtdocorrencia STEP 1
+	m.detitem=SUBSTR(cRedist,AT('&lt;det nItem',cRedist,m.contaocorrencia)+LEN('&lt;det nItem'),AT('&lt;/det&gt;',cRedist,m.contaocorrencia)-AT('&lt;det nItem',cRedist,m.contaocorrencia)-LEN('&lt;/det&gt;')+1)						
+	m.xProd=SUBSTR(m.detitem,AT('&lt;xProd&gt;',m.detitem)+LEN('&lt;xProd&gt;'),AT('&lt;/xProd&gt;',m.detitem)-AT('&lt;xProd&gt;',m.detitem)-LEN('&lt;/xProd&gt;')+1)
+	m.nnf=SUBSTR(cRedist,AT('&lt;nNF&gt;',cRedist)+LEN('&lt;nNF&gt;'),AT('&lt;/nNF&gt;',cRedist)-AT('&lt;nNF&gt;',cRedist)-LEN('&lt;/nNF&gt;')+1)
+	m.cprod=SUBSTR(m.detitem,AT('&lt;cProd&gt;',m.detitem)+LEN('&lt;cProd&gt;'),AT('&lt;/cProd&gt;',m.detitem)-AT('&lt;cProd&gt;',m.detitem)-LEN('&lt;/cProd&gt;')+1)
+	m.cfop=SUBSTR(m.detitem,AT('&lt;CFOP&gt;',m.detitem)+LEN('&lt;CFOP&gt;'),AT('&lt;/CFOP&gt;',m.detitem)-AT('&lt;CFOP&gt;',m.detitem)-LEN('&lt;/CFOP&gt;')+1)
+	m.utrib=SUBSTR(m.detitem,AT('&lt;uTrib&gt;',m.detitem)+LEN('&lt;uTrib&gt;'),AT('&lt;/uTrib&gt;',m.detitem)-AT('&lt;uTrib&gt;',m.detitem)-LEN('&lt;/uTrib&gt;')+1)
+	IF ALLTRIM(m.utrib)=CHR(77)+CHR(194)+CHR(179) &amp;&amp;ajustando M³
+		m.utrib='M3'
+	ENDIF
+	m.qtrib=VAL(SUBSTR(m.detitem,AT('&lt;qTrib&gt;',m.detitem)+LEN('&lt;qTrib&gt;'),AT('&lt;/qTrib&gt;',m.detitem)-AT('&lt;qTrib&gt;',m.detitem)-LEN('&lt;/qTrib&gt;')+1))	
+	m.ean=SUBSTR(m.detitem,AT('&lt;cEAN&gt;',m.detitem)+LEN('&lt;cEAN&gt;'),AT('&lt;/cEAN&gt;',m.detitem)-AT('&lt;cEAN&gt;',m.detitem)-LEN('&lt;/cEAN&gt;')+1)
+	m.ncm=SUBSTR(m.detitem,AT('&lt;NCM&gt;',m.detitem)+LEN('&lt;NCM&gt;'),AT('&lt;/NCM&gt;',m.detitem)-AT('&lt;NCM&gt;',m.detitem)-LEN('&lt;/NCM&gt;')+1)
+	m.cest=SUBSTR(m.detitem,AT('&lt;CEST&gt;',m.detitem)+LEN('&lt;CEST&gt;'),AT('&lt;/CEST&gt;',m.detitem)-AT('&lt;CEST&gt;',m.detitem)-LEN('&lt;/CEST&gt;')+1)
+	m.vuntrib=VAL(SUBSTR(m.detitem,AT('&lt;vUnTrib&gt;',m.detitem)+LEN('&lt;vUnTrib&gt;'),AT('&lt;/vUnTrib&gt;',m.detitem)-AT('&lt;vUnTrib&gt;',m.detitem)-LEN('&lt;/vUnTrib&gt;')+1))
+	m.qcom=VAL(SUBSTR(m.detitem,AT('&lt;qCom&gt;',m.detitem)+LEN('&lt;qCom&gt;'),AT('&lt;/qCom&gt;',m.detitem)-AT('&lt;qCom&gt;',m.detitem)-LEN('&lt;/qCom&gt;')+1))
+	m.vuncom=VAL(SUBSTR(m.detitem,AT('&lt;vUnCom&gt;',m.detitem)+LEN('&lt;vUnCom&gt;'),AT('&lt;/vUnCom&gt;',m.detitem)-AT('&lt;vUnCom&gt;',m.detitem)-LEN('&lt;/vUnCom&gt;')+1))
+	IF m.vuntrib=0
+		m.vuntrib=m.vuncom
+	ENDIF 	
+	m.cProdANP=SUBSTR(m.detitem,AT('&lt;cProdANP&gt;',m.detitem)+LEN('&lt;cProdANP&gt;'),AT('&lt;/cProdANP&gt;',m.detitem)-AT('&lt;cProdANP&gt;',m.detitem)-LEN('&lt;/cProdANP&gt;')+1)
+	m.vdesc=0
+	m.ucom=SUBSTR(m.detitem,AT('&lt;uCom&gt;',m.detitem)+LEN('&lt;uCom&gt;'),AT('&lt;/uCom&gt;',m.detitem)-AT('&lt;uCom&gt;',m.detitem)-LEN('&lt;/uCom&gt;')+1)
+	IF ALLTRIM(m.ucom)=CHR(77)+CHR(194)+CHR(179) &amp;&amp;ajustando M³
+		m.ucom='M3'
+	ENDIF
+	m.icms=SUBSTR(m.detitem,AT('&lt;ICMS&gt;',m.detitem)+LEN('&lt;ICMS&gt;'),AT('&lt;/ICMS&gt;',m.detitem)-AT('&lt;ICMS&gt;',m.detitem)-LEN('&lt;/ICMS&gt;')+1)
+	m.icms_vbc=VAL(SUBSTR(m.icms,AT('&lt;vBC&gt;',m.icms)+LEN('&lt;vBC&gt;'),AT('&lt;/vBC&gt;',m.icms)-AT('&lt;vBC&gt;',m.icms)-LEN('&lt;/vBC&gt;')+1))	
+	m.icms_cst=SUBSTR(m.icms,AT('&lt;CST&gt;',m.icms)+LEN('&lt;CST&gt;'),AT('&lt;/CST&gt;',m.icms)-AT('&lt;CST&gt;',m.icms)-LEN('&lt;/CST&gt;')+1)
+	m.icms_picms=VAL(SUBSTR(m.icms,AT('&lt;pICMS&gt;',m.icms)+LEN('&lt;pICMS&gt;'),AT('&lt;/pICMS&gt;',m.icms)-AT('&lt;pICMS&gt;',m.icms)-LEN('&lt;/pICMS&gt;')+1))	
+	m.orig=VAL(SUBSTR(m.icms,AT('&lt;orig&gt;',m.icms)+LEN('&lt;orig&gt;'),AT('&lt;/orig&gt;',m.icms)-AT('&lt;orig&gt;',m.icms)-LEN('&lt;/orig&gt;')+1))	
+	m.icms_vicms=VAL(SUBSTR(m.icms,AT('&lt;vICMS&gt;',m.icms)+LEN('&lt;vICMS&gt;'),AT('&lt;/vICMS&gt;',m.icms)-AT('&lt;vICMS&gt;',m.icms)-LEN('&lt;/vICMS&gt;')+1))	
+	m.classe=''
+	m.icms_pmvast=0
+	m.icms_predbcst=0
+	m.icms_vbcst=VAL(SUBSTR(m.icms,AT('&lt;vBCST&gt;',m.icms)+LEN('&lt;vBCST&gt;'),AT('&lt;/vBCST&gt;',m.icms)-AT('&lt;vBCST&gt;',m.icms)-LEN('&lt;/vBCST&gt;')+1))	
+	m.icms_picmsst=0
+	m.icms_vicmsst=VAL(SUBSTR(m.icms,AT('&lt;vICMSST&gt;',m.icms)+LEN('&lt;vICMSST&gt;'),AT('&lt;/vICMSST&gt;',m.icms)-AT('&lt;vICMSST&gt;',m.icms)-LEN('&lt;/vICMSST&gt;')+1))	
+	m.icms_modbcst=''
+	m.icms_predbc=VAL(SUBSTR(m.icms,AT('&lt;pRedBC&gt;',m.icms)+LEN('&lt;pRedBC&gt;'),AT('&lt;/pRedBC&gt;',m.icms)-AT('&lt;pRedBC&gt;',m.icms)-LEN('&lt;/pRedBC&gt;')+1))	
+	m.icms_modbc=SUBSTR(m.icms,AT('&lt;modBC&gt;',m.icms)+LEN('&lt;modBC&gt;'),AT('&lt;/modBC&gt;',m.icms)-AT('&lt;modBC&gt;',m.icms)-LEN('&lt;/modBC&gt;')+1)	
+	m.ipi_pipi=0
+	m.ipi_vipi=0
+	m.ipi_vbc=0
+	m.ipi_cst=''
+	m.vunid=VAL(SUBSTR(m.detitem,AT('&lt;vUnCom&gt;',m.detitem)+LEN('&lt;vUnCom&gt;'),AT('&lt;/vUnCom&gt;',m.detitem)-AT('&lt;vUnCom&gt;',m.detitem)-LEN('&lt;/vUnCom&gt;')+1))	
+	m.qunid=VAL(SUBSTR(m.detitem,AT('&lt;qCom&gt;',m.detitem)+LEN('&lt;qCom&gt;'),AT('&lt;/qCom&gt;',m.detitem)-AT('&lt;qCom&gt;',m.detitem)-LEN('&lt;/qCom&gt;')+1))	
+	m.vprod=VAL(SUBSTR(m.detitem,AT('&lt;vProd&gt;',m.detitem)+LEN('&lt;vProd&gt;'),AT('&lt;/vProd&gt;',m.detitem)-AT('&lt;vProd&gt;',m.detitem)-LEN('&lt;/vProd&gt;')+1))	
+	m.vDesc=VAL(SUBSTR(m.detitem,AT('&lt;vDesc&gt;',m.detitem)+LEN('&lt;vDesc&gt;'),AT('&lt;/vDesc&gt;',m.detitem)-AT('&lt;vDesc&gt;',m.detitem)-LEN('&lt;/vDesc&gt;')+1))	
+	m.pis=SUBSTR(m.detitem,AT('&lt;PIS&gt;',m.detitem)+LEN('&lt;PIS&gt;'),AT('&lt;/PIS&gt;',m.detitem)-AT('&lt;PIS&gt;',m.detitem)-LEN('&lt;/PIS&gt;')+1)
+	m.pis_cst=SUBSTR(m.pis,AT('&lt;CST&gt;',m.pis)+LEN('&lt;CST&gt;'),AT('&lt;/CST&gt;',m.pis)-AT('&lt;CST&gt;',m.pis)-LEN('&lt;/CST&gt;')+1)
+	m.pis_vbc=VAL(SUBSTR(m.pis,AT('&lt;vBC&gt;',m.pis)+LEN('&lt;vBC&gt;'),AT('&lt;/vBC&gt;',m.pis)-AT('&lt;vBC&gt;',m.pis)-LEN('&lt;/vBC&gt;')+1))
+	m.pis_ppis=VAL(SUBSTR(m.pis,AT('&lt;pPIS&gt;',m.pis)+LEN('&lt;pPIS&gt;'),AT('&lt;/pPIS&gt;',m.pis)-AT('&lt;pPIS&gt;',m.pis)-LEN('&lt;/pPIS&gt;')+1))
+	m.pis_vpis=VAL(SUBSTR(m.pis,AT('&lt;vPIS&gt;',m.pis)+LEN('&lt;vPIS&gt;'),AT('&lt;/vPIS&gt;',m.pis)-AT('&lt;vPIS&gt;',m.pis)-LEN('&lt;/vPIS&gt;')+1))
+	m.confis=SUBSTR(m.detitem,AT('&lt;COFINS&gt;',m.detitem)+LEN('&lt;COFINS&gt;'),AT('&lt;/COFINS&gt;',m.detitem)-AT('&lt;COFINS&gt;',m.detitem)-LEN('&lt;/COFINS&gt;')+1)
+	m.confis_cst=SUBSTR(m.confis,AT('&lt;CST&gt;',m.confis)+LEN('&lt;CST&gt;'),AT('&lt;/CST&gt;',m.confis)-AT('&lt;CST&gt;',m.confis)-LEN('&lt;/CST&gt;')+1)
+	m.confis_vbc=VAL(SUBSTR(m.pis,AT('&lt;vBC&gt;',m.pis)+LEN('&lt;vBC&gt;'),AT('&lt;/vBC&gt;',m.pis)-AT('&lt;vBC&gt;',m.pis)-LEN('&lt;/vBC&gt;')+1))
+	m.confis_pconfins=VAL(SUBSTR(m.pis,AT('&lt;pCOFINS&gt;',m.pis)+LEN('&lt;pCOFINS&gt;'),AT('&lt;/pCOFINS&gt;',m.pis)-AT('&lt;pCOFINS&gt;',m.pis)-LEN('&lt;/pCOFINS&gt;')+1))
+	m.confis_vconfins=VAL(SUBSTR(m.pis,AT('&lt;vCOFINS&gt;',m.pis)+LEN('&lt;vCOFINS&gt;'),AT('&lt;/vCOFINS&gt;',m.pis)-AT('&lt;vCOFINS&gt;',m.pis)-LEN('&lt;/vCOFINS&gt;')+1))
+	m.ipi=SUBSTR(m.detitem,AT('&lt;IPI&gt;',m.detitem)+LEN('&lt;IPI&gt;'),AT('&lt;/IPI&gt;',m.detitem)-AT('&lt;IPI&gt;',m.detitem)-LEN('&lt;/IPI&gt;')+1)
+	m.ipi_vIPI=VAL(SUBSTR(m.ipi,AT('&lt;vIPI&gt;',m.ipi)+LEN('&lt;vIPI&gt;'),AT('&lt;/vIPI&gt;',m.ipi)-AT('&lt;vIPI&gt;',m.ipi)-LEN('&lt;/vIPI&gt;')+1))
+	m.totalvinculado=0
+	m.vprod=m.vprod-m.vDesc
+	m.xipi=m.xipi+m.ipi_vIPI
+	
+	IF m.vuntrib=m.vprod
+		m.vuntrib=m.vuncom &amp;&amp;Para corrigir o problema de unitário tributado diferente do unitario comercial- Ocorreu na Pau de oleo
+	ENDIF	
+	IF m.qtrib=0
+		m.qtrib=m.qcom
+	ENDIF
+	
+	IF CPcodigoempresa="03862926000184" &amp;&amp;jrc
+		IF LEN(ALLTRIM(m.ean))=14 AND (SUBSTR(ALLTRIM(m.ean),1,1))='1'
+			m.ean=SUBSTR(ALLTRIM(m.ean),2,13)
+		ENDIF
+		m.quanti_odc=thisform.getqtditem_odc(m.ean,m.cprod)
+		IF m.quanti_odc#-1
+			IF m.quanti_odc=m.qcom
+				m.vuntrib=m.vUnCom
+				m.qtrib=m.qcom
+			endif
+		endif
+		m.ean_localizado=thisform.locprod(m.ean,m.cprod)
+		m.pcomp_localizado=thisform.ajusta_itens_odc(m.ean,m.cprod)
+		IF EMPTY(m.ean) AND m.ean_localizado=0
+			m.ean_localizado=2
+		endif
+	ELSE
+		m.ean_localizado=0
+		SELECT produto
+		SET ORDER TO barra
+		SEEK ALLTRIM(m.ean)
+		IF FOUND()
+			m.ean_localizado=1
+		ENDIF
+		
+	endif
+	
+	SELECT item
+	APPEND BLANK
+	GATHER MEMVAR memo
+ENDFOR
+ThisForm.xIPI.Refresh()
+
+ENDPROC
+PROCEDURE importar_nfe
+m.tpAmb=SUBSTR(cRedist,AT('&lt;tpAmb&gt;',cRedist)+LEN('&lt;tpAmb&gt;'),AT('&lt;/tpAmb&gt;',cRedist)-AT('&lt;tpAmb&gt;',cRedist)-LEN('&lt;/tpAmb&gt;')+1)
+m.chave=''
+IF m.tpAmb='1'
+	m.prot=SUBSTR(cRedist,AT('&lt;infProt&gt;',cRedist)+LEN('&lt;infProt&gt;'),AT('&lt;/infProt&gt;',cRedist)-AT('&lt;infProt&gt;',cRedist)-LEN('&lt;/infProt&gt;')+1)
+	m.chave=SUBSTR(prot,AT('&lt;chNFe&gt;',prot)+LEN('&lt;chNFe&gt;'),AT('&lt;/chNFe&gt;',prot)-AT('&lt;chNFe&gt;',prot)-LEN('&lt;/chNFe&gt;')+1)
+	IF EMPTY(m.chave)
+		=MESSAGEBOX('Atenção!!! Não foi localizado do numero da Chave da NFe.Verifique o conteúdo do XML por favor ele PODE estar inválido.',0+16,CPnomesys2)
+		m.okteste=.f.
+		RETURN
+	ENDIF
+ELSE	
+	=MESSAGEBOX('Atenção!!! Não vai ser possível importar os dados desta nota.Foi emitida em ambiente de TESTE.',0+16,CPnomesys2)
+	m.okteste=.f.
+	RETURN
+ENDIF	
+m.crt=SUBSTR(cRedist,AT('&lt;CRT&gt;',cRedist)+LEN('&lt;CRT&gt;'),AT('&lt;/CRT&gt;',cRedist)-AT('&lt;CRT&gt;',cRedist)-LEN('&lt;/CRT&gt;')+1)
+m.crt='&lt;CRT&gt;'+m.crt+'&lt;/CRT&gt;'
+m.demi=SUBSTR(cRedist,AT('&lt;dEmi&gt;',cRedist)+LEN('&lt;dEmi&gt;'),AT('&lt;/dEmi&gt;',cRedist)-AT('&lt;dEmi&gt;',cRedist)-LEN('&lt;/dEmi&gt;')+1)
+m.demi=(SUBSTR(m.demi,9,2)+'-'+SUBSTR(m.demi,6,2)+'-'+SUBSTR(m.demi,1,4))
+IF EMPTY(CTOD(m.demi))
+	m.demi=SUBSTR(cRedist,AT('&lt;dhEmi&gt;',cRedist)+LEN('&lt;dhEmi&gt;'),AT('&lt;/dhEmi&gt;',cRedist)-AT('&lt;dhEmi&gt;',cRedist)-LEN('&lt;/dhEmi&gt;')+1)
+	m.demi=(SUBSTR(m.demi,9,2)+'-'+SUBSTR(m.demi,6,2)+'-'+SUBSTR(m.demi,1,4))
+ENDIF
+m.demi=CTOD(m.demi)
+m.dest=SUBSTR(cRedist,AT('&lt;dest&gt;',cRedist)+LEN('&lt;dest&gt;'),AT('&lt;/dest&gt;',cRedist)-AT('&lt;dest&gt;',cRedist)-LEN('&lt;/dest&gt;')+1)
+m.cnpj=''
+IF .NOT. EMPTY(m.dest)
+	m.cnpj=SUBSTR(dest,AT('&lt;CNPJ&gt;',dest)+LEN('&lt;CNPJ&gt;'),AT('&lt;/CNPJ&gt;',dest)-AT('&lt;CNPJ&gt;',dest)-LEN('&lt;/CNPJ&gt;')+1)
+	m.xnome=SUBSTR(dest,AT('&lt;xNome&gt;',dest)+LEN('&lt;xNome&gt;'),AT('&lt;/xNome&gt;',dest)-AT('&lt;xNome&gt;',dest)-LEN('&lt;/xNome&gt;')+1)
+ENDIF	
+SELECT filial
+SET ORDER TO 1
+SEEK CPFilialusu
+IF m.cnpj#Eliponto(filial.filcnpj)
+	=MESSAGEBOX('Atenção!!! Esta NFe não foi emitida para este CNPJ. Destinatário do XML:'+m.cnpj+' '+m.xnome,0+16,CPnomesys2)
+	m.okteste=.f.
+	RETURN
+ENDIF
+m.emit=SUBSTR(cRedist,AT('&lt;emit&gt;',cRedist)+LEN('&lt;emit&gt;'),AT('&lt;/emit&gt;',cRedist)-AT('&lt;emit&gt;',cRedist)-LEN('&lt;/emit&gt;')+1)
+IF .NOT. EMPTY(m.emit)
+	m.cnpj=SUBSTR(emit,AT('&lt;CNPJ&gt;',emit)+LEN('&lt;CNPJ&gt;'),AT('&lt;/CNPJ&gt;',emit)-AT('&lt;CNPJ&gt;',emit)-LEN('&lt;/CNPJ&gt;')+1)
+	m.ie=SUBSTR(emit,AT('&lt;IE&gt;',emit)+LEN('&lt;IE&gt;'),AT('&lt;/IE&gt;',emit)-AT('&lt;IE&gt;',emit)-LEN('&lt;/IE&gt;')+1)
+	m.xnome=SUBSTR(emit,AT('&lt;xNome&gt;',emit)+LEN('&lt;xNome&gt;'),AT('&lt;/xNome&gt;',emit)-AT('&lt;xNome&gt;',emit)-LEN('&lt;/xNome&gt;')+1)
+	m.xfant_opc=''
+	m.fone_opc=SUBSTR(emit,AT('&lt;fone&gt;',emit)+LEN('&lt;fone&gt;'),AT('&lt;/fone&gt;',emit)-AT('&lt;fone&gt;',emit)-LEN('&lt;/fone&gt;')+1)
+	m.xlgr=SUBSTR(emit,AT('&lt;xLgr&gt;',emit)+LEN('&lt;xLgr&gt;'),AT('&lt;/xLgr&gt;',emit)-AT('&lt;xLgr&gt;',emit)-LEN('&lt;/xLgr&gt;')+1)
+	m.nro=SUBSTR(emit,AT('&lt;nro&gt;',emit)+LEN('&lt;nro&gt;'),AT('&lt;/nro&gt;',emit)-AT('&lt;nro&gt;',emit)-LEN('&lt;/nro&gt;')+1)
+	m.xcpl_opc=SUBSTR(emit,AT('&lt;xCpl&gt;',emit)+LEN('&lt;xCpl&gt;'),AT('&lt;/xCpl&gt;',emit)-AT('&lt;xCpl&gt;',emit)-LEN('&lt;/xCpl&gt;')+1)
+	m.xbairro=SUBSTR(emit,AT('&lt;xBairro&gt;',emit)+LEN('&lt;xBairro&gt;'),AT('&lt;/xBairro&gt;',emit)-AT('&lt;xBairro&gt;',emit)-LEN('&lt;/xBairro&gt;')+1)
+	m.cmun=SUBSTR(emit,AT('&lt;cMun&gt;',emit)+LEN('&lt;cMun&gt;'),AT('&lt;/cMun&gt;',emit)-AT('&lt;cMun&gt;',emit)-LEN('&lt;/cMun&gt;')+1)
+	m.xmun=SUBSTR(emit,AT('&lt;xMun&gt;',emit)+LEN('&lt;xMun&gt;'),AT('&lt;/xMun&gt;',emit)-AT('&lt;xMun&gt;',emit)-LEN('&lt;/xMun&gt;')+1)
+	m.cep_opc=SUBSTR(emit,AT('&lt;CEP&gt;',emit)+LEN('&lt;CEP&gt;'),AT('&lt;/CEP&gt;',emit)-AT('&lt;CEP&gt;',emit)-LEN('&lt;/CEP&gt;')+1)
+	m.uf=SUBSTR(emit,AT('&lt;UF&gt;',emit)+LEN('&lt;UF&gt;'),AT('&lt;/UF&gt;',emit)-AT('&lt;UF&gt;',emit)-LEN('&lt;/UF&gt;')+1)
+	m.email_opc=SUBSTR(emit,AT('&lt;eMail&gt;',emit)+LEN('&lt;eMail&gt;'),AT('&lt;/eMail&gt;',emit)-AT('&lt;eMail&gt;',emit)-LEN('&lt;/eMail&gt;')+1)
+	m.xpais=SUBSTR(emit,AT('&lt;xPais&gt;',emit)+LEN('&lt;xPais&gt;'),AT('&lt;/xPais&gt;',emit)-AT('&lt;xPais&gt;',emit)-LEN('&lt;/xPais&gt;')+1)
+	SELECT cliente
+	SET ORDER TO 5
+	SEEK ALLTRIM(m.cnpj)
+	IF .not. FOUND()
+		IF MESSAGEBOX('Não foi localizado o remetente desta NFe Cadastrado. Deseja fazer o cadastro?',4+32,CPnomesys2)=6
+			DO FORM ficadcli WITH '',m.emit+m.crt
+		ENDIF
+	ENDIF
+	ThisForm.EntFornec.Value=''
+	SELECT cliente
+	SET ORDER TO 5
+	SEEK ALLTRIM(m.cnpj)
+	IF .NOT. FOUND()
+		=MESSAGEBOX('Não foi localizado o remetente desta NFe.',0+16,CPnomesys2)
+	ELSE 	
+		m.codigolocalizado=cliente.clicodigo
+		IF cliente.clisituacao&lt;=1
+			ThisForm.EntFornec.Value=cliente.clicodigo
+			ThisForm.Nomefor.Value=cliente.clinome
+			ThisForm.cnPJ.Value=m.cnpj
+		ELSE
+			SELECT cliente
+			SET ORDER TO 5
+			SEEK ALLTRIM(m.cnpj)
+			SCAN WHILE ALLTRIM(m.cnpj)=ALLTRIM(cliente.clicpf_cnpj)
+				IF cliente.clisituacao&lt;=1
+					ThisForm.EntFornec.Value=cliente.clicodigo
+					ThisForm.Nomefor.Value=cliente.clinome
+					ThisForm.cnPJ.Value=m.cnpj
+					EXIT
+				ENDIF
+			ENDSCAN 	
+			IF EMPTY(ThisForm.EntFornec.Value)
+				=MESSAGEBOX('Atenção!!! Foi localizado do fornecedor com o código:.'+m.codigolocalizado+', mas a situação esta como inativo.',0+16,CPnomesys2)
+				m.okteste=.f.
+				RETURN				
+			ENDIF
+		ENDIF 	
+	ENDIF
+	IF m.okteste
+		m.total=SUBSTR(cRedist,AT('&lt;total&gt;',cRedist)+LEN('&lt;total&gt;'),AT('&lt;/total&gt;',cRedist)-AT('&lt;total&gt;',cRedist)-LEN('&lt;/total&gt;')+1)
+		m.vBCST=VAL(SUBSTR(total,AT('&lt;vBCST&gt;',total)+LEN('&lt;vBCST&gt;'),AT('&lt;/vBCST&gt;',total)-AT('&lt;vBCST&gt;',total)-LEN('&lt;/vBCST&gt;')+1))
+		m.vST=VAL(SUBSTR(total,AT('&lt;vST&gt;',total)+LEN('&lt;vST&gt;'),AT('&lt;/vST&gt;',total)-AT('&lt;vST&gt;',total)-LEN('&lt;/vST&gt;')+1))
+		m.vNF=VAL(SUBSTR(total,AT('&lt;vNF&gt;',total)+LEN('&lt;vNF&gt;'),AT('&lt;/vNF&gt;',total)-AT('&lt;vNF&gt;',total)-LEN('&lt;/vNF&gt;')+1))
+		m.vFrete=VAL(SUBSTR(total,AT('&lt;vFrete&gt;',total)+LEN('&lt;vFrete&gt;'),AT('&lt;/vFrete&gt;',total)-AT('&lt;vFrete&gt;',total)-LEN('&lt;/vFrete&gt;')+1))
+		m.vSeg=VAL(SUBSTR(total,AT('&lt;vSeg&gt;',total)+LEN('&lt;vSeg&gt;'),AT('&lt;/vSeg&gt;',total)-AT('&lt;vSeg&gt;',total)-LEN('&lt;/vSeg&gt;')+1))
+		m.vOutro=VAL(SUBSTR(total,AT('&lt;vOutro&gt;',total)+LEN('&lt;vOutro&gt;'),AT('&lt;/vOutro&gt;',total)-AT('&lt;vOutro&gt;',total)-LEN('&lt;/vOutro&gt;')+1))
+		m.vDesc=VAL(SUBSTR(total,AT('&lt;vDesc&gt;',total)+LEN('&lt;vDesc&gt;'),AT('&lt;/vDesc&gt;',total)-AT('&lt;vDesc&gt;',total)-LEN('&lt;/vDesc&gt;')+1))
+		m.nnf=SUBSTR(cRedist,AT('&lt;nNF&gt;',cRedist)+LEN('&lt;nNF&gt;'),AT('&lt;/nNF&gt;',cRedist)-AT('&lt;nNF&gt;',cRedist)-LEN('&lt;/nNF&gt;')+1)
+		m.serie=SUBSTR(cRedist,AT('&lt;serie&gt;',cRedist)+LEN('&lt;serie&gt;'),AT('&lt;/serie&gt;',cRedist)-AT('&lt;serie&gt;',cRedist)-LEN('&lt;/serie&gt;')+1)
+		ThisForm.entchave_nfe.Value=m.chave
+		ThisForm.EntdataEmi.Value=m.demi
+		ThisForm.entdataEnt.Value=DATE()
+		ThisForm.entbasest.Value=m.vBCST
+		Thisform.enticmsubs.Value=m.vST
+		ThisForm.vlrNota.Value=m.vNF
+		*ThisForm.entdescNot.Value=m.vDesc
+		ThisForm.entacrescimo.Value=0
+		ThisForm.entnr_nota.Value=Strzero(VAL(RIGHT(m.nnf,6)),6)
+		Thisform.entserie.Value=m.serie
+		ThisForm.entmodelo.Value=24
+		AeEntNot.SwPagFra1.Page1.VlrNota.Value=m.vNF
+		AeEntNot.swpagFRA1.page1.vlrTotal.Value=0
+		AeEntNot.swpagFRA1.page1.totalipi.Value=0
+		AeEntNot.swpagFRA1.page1.valoricm.Value=0
+		AeEntNot.swpagFRA1.page1.subtotal.Value=0
+		*-
+		m.EntNr_nota=Strzero(VAL(m.nnf),9)
+		m.EntNr_nota=RIGHT(m.EntNr_nota,6)
+		m.EntSerie=AjustaTamanho(m.serie,LEN(entranota1.entserie))
+		m.entfornec=ThisForm.EntFornec.Value
+		SELE Entranota1
+	    SET ORDER TO 1
+	    SEEK CPfilialusu+m.EntNr_nota+m.EntSerie+m.entfornec
+		IF FOUND()
+			=MESSAGEBOX("Já existe Nota Lançada com este Numero.Não vai ser possível importar esta nota.Se necessário exclua o lançamento anterior.",0+16,CPnomesys)
+			m.okteste=.f.
+			RETURN
+		ENDIF	
+	    IF CPcodigoempresa="05138688000275" .and. NPacesso=3
+	      *set step on
+	      CPfilialusuGRM="01"
+	      SELE entranota2
+	      SET ORDER TO 1
+	      SEEK CPfilialusuGRM+m.EntNr_nota+m.EntSerie+m.entfornec
+	      IF FOUND()
+			SELE filial
+			SET ORDER TO 1
+			SEEK CPfilialusuGRM
+			=MESSAGEBOX("Já existe Nota Lançada com este Numero.Não vai ser possível importar esta nota.Se necessário exclua o lançamento anterior.",0+16,CPnomesys)
+			m.okteste=.f.
+			RETURN
+		  ENDIF		
+	    ENDIF
+		*-
+		SELECT item
+		DELETE ALL
+		SELECT resumoe
+		DELETE ALL
+		ThisForm.Importar_itens()
+		ThisForm.Tabela.Refresh()
+	ENDIF
+ENDIF
+
+ENDPROC
+PROCEDURE locprod
+PARAMETERS m.ean,m.fabric
+m.result=1
+IF EMPTY(m.ean)
+	m.result=0
+else
+	m.result=thisform.locprodean(m.ean)
+endif
+IF m.result=0 .and. NOT EMPTY(m.fabric)
+	SELECT produto_fornecedor
+	SET ORDER TO proefornec
+	SEEK thisform.entfornec.value+m.fabric
+	IF FOUND()
+		SELECT produto
+		SET ORDER TO 1
+		SEEK produto_fornecedor.pf_procodigo+produto_fornecedor.pf_prodigito
+		m.result=3
+	endif
+ENDIF
+RETURN m.result
+
+
+ENDPROC
+PROCEDURE locprodean
+PARAMETERS m.ean
+m.ean_localizado=1
+SELECT produto
+SET ORDER TO barra
+SEEK ALLTRIM(m.ean)
+IF NOT FOUND()
+	SET ORDER TO barra2
+	SEEK ALLTRIM(m.ean)
+	IF NOT FOUND()
+		SET ORDER TO barra3
+		SEEK ALLTRIM(m.ean)
+		IF NOT FOUND()
+			m.ean_localizado=0
+		endif
+	endif
+ENDIF
+RETURN m.ean_localizado
+ENDPROC
+PROCEDURE retornarcor
+PARAMETERS m.objeto
+IF TYPE('m.objeto')#'C'
+	m.objeto=''
+ENDIF
+IF item.totalvinculado&gt;0
+	*SET STEP ON
+ENDIF
+IF CPcodigoempresa="03862926000184" &amp;&amp;jrc
+	IF item.totalvinculado&gt;0 .and. item.vprod&lt;item.totalvinculado_conf
+		IF UPPER(ALLTRIM(m.objeto))$'VPROD*XPROD'
+			RETURN ThisForm.shperro.BackColor
+		ENDIF
+	ENDIF
+ELSE
+	IF item.totalvinculado&gt;0 .and. item.vprod_conf&lt;item.totalvinculado_conf
+		IF UPPER(ALLTRIM(m.objeto))$'VPROD*XPROD'
+			RETURN ThisForm.shperro.BackColor
+		ENDIF
+	ENDIF
+endif
+IF item.totalvinculado&gt;0 .and. item.icms_vICMSST_conf#item.icmstpro_conf
+	IF UPPER(ALLTRIM(m.objeto))$UPPER('XPROD*Icms_vICMSST')
+		RETURN ThisForm.shperro.BackColor
+	ENDIF
+ENDIF
+IF item.totalvinculado&gt;0 .and. item.ipi_vIPI_conf#item.ipi_conf
+	IF UPPER(ALLTRIM(m.objeto))$UPPER('XPROD*ipi_vIPI')
+		RETURN ThisForm.shperro.BackColor
+	ENDIF
+ENDIF
+IF item.totalvinculado&gt;0 .and. item.totalvinculado&lt;(item.vprod-item.vdesc)
+	RETURN ThisForm.shpvinculado_parcial.BackColor
+ENDIF
+IF item.totalvinculado&gt;0 .and. item.totalvinculado&gt;=(item.vprod-item.vdesc)
+	RETURN ThisForm.shpvinculado_total.BackColor
+ENDIF
+IF m.objeto='nloc' .and. thisform.shpeanodc.Visible=.t.
+	IF item.pcomp_localizado=2
+		RETURN ThisForm.shpeanodc.BackColor
+	ENDIF
+endif
+IF item.ean_localizado=1
+	RETURN ThisForm.SHPEan.BackColor
+ENDIF
+IF item.ean_localizado=2
+	RETURN ThisForm.shpeannl.BackColor
+ENDIF
+IF item.ean_localizado=3
+	RETURN ThisForm.shcodfab.BackColor
+ENDIF
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3>arquivo
+especie_tela
+xml_nota
+*importar_nfe 
+*importar_cte 
+*importar_itens 
+*retornarcor 
+*ajustando_valores 
+*locprod 
+*ajusta_itens_odc 
+*locprodean 
+*getqtditem_odc 
+</reserved3>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swcombut</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>commandbutton</baseclass>
+		<objname>cmdretornar</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 520
+Left = 598
+Height = 31
+Width = 132
+FontSize = 8
+Caption = "Retornar"
+TabIndex = 38
+Name = "cmdretornar"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Click
+IF Thisform.cmdvalidar.Click()
+	SELECT item
+	SET RELATION TO
+	SELECT RESUMOe
+	GO TOP
+	ThisForm.Release()
+ENDIF 	
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TT0ZB6PK</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>entchave_nfe</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Alignment = 0
+ControlSource = "m.entchave_nfe"
+Enabled = .F.
+Height = 24
+Left = 272
+TabIndex = 11
+Top = 48
+Visible = .T.
+Width = 405
+DisabledBackColor = 227,227,227
+Name = "entchave_nfe"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Init
+SwTexBox::Init()
+This.InputMask=REPLI("9",LEN(Entranota1.entchave_nfe))
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAIV</uniqueid>
+		<timestamp>1125996244</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>lblDesconto</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .T.
+FontSize = 8
+Alignment = 1
+BorderStyle = 0
+Caption = "Desconto"
+Height = 15
+Left = 313
+Top = 119
+Visible = .T.
+Width = 65
+TabIndex = 28
+BackColor = 192,192,192
+ZOrderSet = 2
+Name = "lblDesconto"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAIW</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>EntDescNot</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Tag = "0"
+FontBold = .F.
+FontSize = 8
+Alignment = 1
+Value = (Entranota1.EntDescNot)
+ControlSource = "m.entdescnot"
+Enabled = .F.
+Format = "K"
+Height = 24
+InputMask = ""
+Left = 278
+SpecialEffect = 0
+TabIndex = 29
+Top = 136
+Visible = .T.
+Width = 100
+Style = 0
+DisabledBackColor = 227,227,227
+ZOrderSet = 3
+Name = "EntDescNot"
+</properties>
+		<protected/>
+		<methods>PROCEDURE GotFocus
+This.Tag=STR(This.Value,12,2)
+ENDPROC
+PROCEDURE Init
+SwTexBox::Init()
+This.InputMask=ALLTRIM(CPpicvalor)
+ENDPROC
+PROCEDURE Valid
+SELE Resumoe
+GO TOP
+*IF .NOT. EOF()
+m.vlrtotal=m.vlrtotal+VAL(This.Tag)-m.Entdescnot
+This.Tag=""
+This.Parent.VlrTotal.Refresh()
+*ENDIF
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3V80NDIKN</uniqueid>
+		<timestamp>1125996244</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>Label5</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .T.
+FontSize = 8
+Alignment = 1
+Caption = "IPI"
+Height = 15
+Left = 583
+Top = 122
+Visible = .T.
+Width = 65
+TabIndex = 30
+BackColor = 192,192,192
+ZOrderSet = 4
+Name = "Label5"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3V80NDIKO</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>xipi</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .F.
+FontSize = 8
+Alignment = 1
+Value = 0
+ControlSource = "m.xipi"
+Enabled = .F.
+Format = "K"
+Height = 24
+Left = 538
+SpecialEffect = 0
+TabIndex = 31
+Top = 136
+Visible = .T.
+Width = 110
+Style = 0
+DisabledBackColor = 227,227,227
+ZOrderSet = 5
+Name = "xipi"
+</properties>
+		<protected/>
+		<methods>PROCEDURE GotFocus
+This.Tag=STR(This.Value,12,2)
+ENDPROC
+PROCEDURE Init
+SwTexBox::Init()
+This.InputMask=ALLTRIM(CPpicvalor)
+ENDPROC
+PROCEDURE LostFocus
+This.Tag=STR(This.Value,12,2)
+*IF ThisForm.especie_tela=1 .OR. ThisForm.especie_tela=3
+*   This.Parent.Novo.Setfocus()
+*ENDIF
+
+
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1125996244</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>lblacrescimo</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .T.
+FontSize = 8
+Alignment = 1
+Caption = "Acréscimo"
+Height = 15
+Left = 448
+Top = 119
+Visible = .T.
+Width = 65
+TabIndex = 30
+BackColor = 192,192,192
+ZOrderSet = 4
+Name = "lblacrescimo"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1N</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>EntAcrescimo</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .F.
+FontSize = 8
+Alignment = 1
+Value = (Entranota1.entacrescimo)
+ControlSource = "m.entacrescimo"
+Enabled = .F.
+Format = "K"
+Height = 24
+Left = 403
+SpecialEffect = 0
+TabIndex = 31
+Top = 136
+Visible = .T.
+Width = 110
+Style = 0
+DisabledBackColor = 227,227,227
+ZOrderSet = 5
+Name = "EntAcrescimo"
+</properties>
+		<protected/>
+		<methods>PROCEDURE GotFocus
+This.Tag=STR(This.Value,12,2)
+ENDPROC
+PROCEDURE Init
+SwTexBox::Init()
+This.InputMask=ALLTRIM(CPpicvalor)
+ENDPROC
+PROCEDURE LostFocus
+This.Tag=STR(This.Value,12,2)
+*IF ThisForm.especie_tela=1 .OR. ThisForm.especie_tela=3
+*   This.Parent.Novo.Setfocus()
+*ENDIF
+
+
+ENDPROC
+PROCEDURE Valid
+SELE Resumoe
+GO TOP
+m.vlrtotal=m.vlrtotal-VAL(This.Tag)+m.Entacrescimo
+This.Tag=""
+This.Parent.VlrTotal.Refresh()
+*IF CPtipoentrada#2 .and. ThisForm.especie_tela=1
+*   RETURN +2
+*ENDIF
+
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_4ZO0PJ351</uniqueid>
+		<timestamp>1261726866</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>lblshapeodc</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>AutoSize = .F.
+FontBold = .T.
+FontSize = 8
+Alignment = 0
+Caption = "Não encontrado na ODC"
+Height = 16
+Left = 869
+Top = 364
+Visible = .F.
+Width = 137
+TabIndex = 39
+BackColor = 192,192,192
+ZOrderSet = 8
+Name = "lblshapeodc"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1261726866</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>Label9</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .T.
+FontSize = 8
+Alignment = 0
+Caption = "Sem codigo EAN info. na nota"
+Height = 15
+Left = 674
+Top = 364
+Visible = .T.
+Width = 164
+TabIndex = 39
+BackColor = 192,192,192
+ZOrderSet = 8
+Name = "Label9"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJF</uniqueid>
+		<timestamp>1122720838</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>Label7</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .T.
+FontSize = 8
+Alignment = 0
+Caption = "Chave NFE"
+Height = 15
+Left = 272
+Top = 32
+Visible = .T.
+Width = 60
+TabIndex = 10
+BackColor = 192,192,192
+ZOrderSet = 8
+Name = "Label7"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122720838</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>Label6</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .T.
+FontSize = 8
+Alignment = 1
+Caption = "Base ST"
+Height = 15
+Left = 70
+Top = 119
+Visible = .T.
+Width = 50
+TabIndex = 24
+BackColor = 192,192,192
+ZOrderSet = 8
+Name = "Label6"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0Y7OOK</uniqueid>
+		<timestamp>1123124596</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>Label4</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .T.
+FontSize = 8
+Alignment = 0
+Caption = "Item com erro nos valores"
+Height = 15
+Left = 240
+Top = 519
+Visible = .T.
+Width = 156
+TabIndex = 39
+BackColor = 192,192,192
+ZOrderSet = 8
+Name = "Label4"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0OD984</uniqueid>
+		<timestamp>1122729783</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>Label3</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .T.
+FontSize = 8
+Alignment = 0
+Caption = "Item vinculado parcial"
+Height = 15
+Left = 57
+Top = 541
+Visible = .T.
+Width = 135
+TabIndex = 40
+BackColor = 192,192,192
+ZOrderSet = 8
+Name = "Label3"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ1</uniqueid>
+		<timestamp>1125996244</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>Label1</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .T.
+FontSize = 8
+Alignment = 1
+Caption = "ICM Subst."
+Height = 15
+Left = 188
+Top = 119
+Visible = .T.
+Width = 65
+TabIndex = 26
+BackColor = 192,192,192
+ZOrderSet = 8
+Name = "Label1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ0</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>entbasest</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .F.
+FontSize = 8
+Alignment = 1
+Value = (0)
+ControlSource = "m.entbasest"
+Enabled = .F.
+Format = "K"
+Height = 24
+InputMask = ""
+Left = 12
+SpecialEffect = 0
+TabIndex = 25
+Top = 136
+Visible = .T.
+Width = 108
+Style = 0
+DisabledBackColor = 227,227,227
+ZOrderSet = 9
+Name = "entbasest"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Init
+SwTexBox::Init()
+This.InputMask=ALLTRIM(CPpicvalor)
+ENDPROC
+PROCEDURE LostFocus
+
+
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ2</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>Enticmsubs</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .F.
+FontSize = 8
+Alignment = 1
+Value = (Entranota1.enticmsubs)
+ControlSource = "m.enticmsubs"
+Enabled = .F.
+Format = "K"
+Height = 24
+InputMask = ""
+Left = 145
+SpecialEffect = 0
+TabIndex = 27
+Top = 136
+Visible = .T.
+Width = 108
+Style = 0
+DisabledBackColor = 227,227,227
+ZOrderSet = 9
+Name = "Enticmsubs"
+</properties>
+		<protected/>
+		<methods>PROCEDURE GotFocus
+This.Tag=STR(This.Value,12,2)
+ENDPROC
+PROCEDURE Init
+SwTexBox::Init()
+This.InputMask=ALLTRIM(CPpicvalor)
+ENDPROC
+PROCEDURE Valid
+SELE Resumoe
+GO TOP
+*IF .NOT. EOF()
+m.vlrtotal=m.vlrtotal-VAL(This.Tag)+m.Enticmsubs
+This.Tag=""
+This.Parent.VlrTotal.Refresh()
+*ENDIF
+
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122599823</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>Label2</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .T.
+FontSize = 8
+Alignment = 0
+Caption = "Item vinculado total"
+Height = 15
+Left = 57
+Top = 519
+Visible = .T.
+Width = 119
+TabIndex = 39
+BackColor = 192,192,192
+ZOrderSet = 8
+Name = "Label2"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swcombut</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>commandbutton</baseclass>
+		<objname>cmdlocalizarxml</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 4
+Left = 261
+Height = 28
+Width = 240
+FontBold = .F.
+FontSize = 8
+Picture = ..\..\..\siswin2
+Caption = "Localizar XML"
+TabIndex = 3
+ToolTipText = ""
+ZOrderSet = 14
+Name = "cmdlocalizarxml"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Click
+PARAMETERS m.xml
+cRedist=''
+IF TYPE('m.xml')='C' .AND. (.NOT. EMPTY(m.xml))
+	cRedist=m.xml
+ENDIF
+CLPoint=SET('POINT')
+CLseparator=SET('SEPARATOR')
+SET POINT TO '.'
+SET SEPARATOR TO ','
+IF EMPTY(m.xml)
+	SELE filial
+	SET ORDER TO 1
+	SEEK CPFilialusu
+	CLpadrao=SET("default")+SYS(2003)
+	*-
+	SET DEFA TO ALLTRIM(filial.fillocalnfe_entrada)
+	IF EMPTY(cRedist)
+		m.arquivoxml=GETFILE('xml')
+		SET DEFA TO &amp;CLpadrao
+		ThisForm.Arquivo=m.arquivoxml
+		IF FILE(m.arquivoxml)
+			cRedist=FILETOSTR(m.arquivoxml)
+		ENDIF
+	ENDIF 	
+	SET DEFA TO &amp;CLpadrao
+	m.arquivoxml=ThisForm.Arquivo
+ELSE 	
+	cRedist=m.xml
+ENDIF 	
+m.okteste=.t.
+IF .not. EMPTY(cRedist)
+	ThisForm.xml_nota=cRedist
+	m.mod=SUBSTR(cRedist,AT('&lt;mod&gt;',cRedist)+LEN('&lt;mod&gt;'),AT('&lt;/mod&gt;',cRedist)-AT('&lt;mod&gt;',cRedist)-LEN('&lt;/mod&gt;')+1)
+	IF m.mod='55'
+		ThisForm.Importar_NFe()
+	ENDIF
+	IF m.mod='57'
+		ThisForm.Importar_CTe()
+	ENDIF
+	ThisForm.entdataent.SetFocus()
+	*-
+ELSE
+	=MESSAGEBOX('Atenção!!! Não foi localizado o XML.',0+16,CPnomesys2)	
+ENDIF
+SET POINT TO CLpoint
+SET SEPARATOR TO CLseparator
+
+*SET POINT TO ','
+*SET SEPARATOR TO '.'
+SELECT item
+GO TOP
+ThisForm.Refresh()
+
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TT0ZB6PL</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swcombut</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>commandbutton</baseclass>
+		<objname>cmdcarregarXML</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 4
+Left = 17
+Height = 28
+Width = 240
+FontBold = .F.
+FontSize = 8
+Picture = ..\..\..\siswin2
+Caption = "Buscar  XML"
+Enabled = .T.
+TabIndex = 2
+ToolTipText = "Busca XML armazenado no banco de dados"
+ZOrderSet = 14
+Name = "cmdcarregarXML"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Click
+m.xml=''
+DO FORM aeentnot_xml_carregar_xml TO m.xml
+IF .NOT. EMPTY(m.xml)
+	ThisForm.cmdlocalizarxml.click(m.xml)
+ENDIF
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0NTVGG</uniqueid>
+		<timestamp>1122720838</timestamp>
+		<class>swlabel</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>label</baseclass>
+		<objname>Swlabel3</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+WordWrap = .T.
+Alignment = 0
+Caption = "Modelo"
+Height = 11
+Left = 187
+Top = 32
+Visible = .T.
+Width = 47
+TabIndex = 8
+ZOrderSet = 17
+Name = "Swlabel3"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122720838</timestamp>
+		<class>swlabel</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>label</baseclass>
+		<objname>lblCliente</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+WordWrap = .T.
+BorderStyle = 0
+Caption = "Fornecedor"
+Height = 15
+Left = 12
+Top = 76
+Visible = .T.
+Width = 70
+TabIndex = 15
+ZOrderSet = 19
+Name = "lblCliente"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TN106BHP</uniqueid>
+		<timestamp>1122720838</timestamp>
+		<class>swlabel</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>label</baseclass>
+		<objname>Swlabel5</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+WordWrap = .T.
+BorderStyle = 0
+Caption = "CNPJ/CPF"
+Height = 15
+Left = 378
+Top = 76
+Visible = .T.
+Width = 70
+TabIndex = 18
+ZOrderSet = 19
+Name = "Swlabel5"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0OMMSB</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>EntCondi</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Alignment = 3
+Value = (Entranota1.EntCondi)
+ControlSource = "m.entcondi"
+Enabled = .T.
+Format = ""
+Height = 24
+Left = 686
+TabIndex = 13
+ToolTipText = ""
+Top = 48
+Width = 84
+DisabledBackColor = 227,227,227
+ZOrderSet = 20
+Name = "EntCondi"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Init
+SwTexBox::Init()
+This.InputMask=REPLI("9",LEN(Entranota1.EntCondi))
+ENDPROC
+PROCEDURE KeyPress
+LPARAMETERS nKeyCode, nShiftAltCtrl
+IF nKeyCode=-1
+DO FORM swprocpa TO m.entCondi
+ENDIF
+
+ENDPROC
+PROCEDURE Valid
+IF LASTKEY()#-1
+SELE Tabcondi
+SET ORDER TO 1
+m.EntCondi=StrZero(VAL(m.EntCondi),LEN(Tabcondi.TcoCodigo))
+SEEK m.EntCondi
+IF .NOT. FOUND()
+IF MESSAGEBOX("Não existe esta Condição de Pagamento Cadastrada.",5+16,CPnomesys)=2
+ThisForm.cmdretornar.Click
+RETURN +4
+ELSE
+EntCondi=SPACE(LEN(Tabcondi.TcoCodigo))
+RETURN .F.
+ENDIF
+ENDIF
+ThisForm.DescriCond.refresh()
+ENDIF
+
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>EntSerie</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Value = (Entranota1.EntSerie)
+ControlSource = "m.entserie"
+Enabled = .F.
+Format = "K"
+Height = 24
+InputMask = ""
+Left = 100
+TabIndex = 7
+Top = 48
+Visible = .T.
+Width = 43
+DisabledBackColor = 227,227,227
+ZOrderSet = 21
+Name = "EntSerie"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Init
+SwTexBox::Init()
+This.InputMask=REPLI("!",LEN(Entranota1.EntSerie))
+
+ENDPROC
+PROCEDURE Valid
+IF Thisform.especie_tela=4
+*set step on
+SELE saidapro1
+SET ORDER TO 1
+SEEK CPfilialusu+m.entnr_nota+m.entserie
+SCAN WHILE saifilial = CPfilialusu .and. sainr_nota = m.entnr_nota .and. saiserie = m.entserie
+SELE ResumoE
+SCATTER MEMVAR BLANK
+m.produto=saidapro1.saiPRODUTO
+m.digito=saidapro1.saiDIGITO
+SELE produto
+SET ORDER TO 1
+SEEK m.produto+m.digito
+m.descri=produto.PRODESCRI
+m.un=Unidade.UniDescri
+m.quanti=saidapro1.saiquanti
+m.unitario=saidapro1.saiprvenda
+IF .NOT. LPusadigito
+m.codigoaux=m.produto
+ELSE
+*m.digito=This.Value
+*IF .NOT. EMPTY(m.digito)
+*   m.digito=STRZERO(VAL(m.digito),LEN(produto.PRODIGITO))
+*ENDIF
+m.codigoaux=m.Produto+m.digito
+ENDIF
+ThisForm.Valida_Produto()
+*-
+*        m.ipi=pedido2.pedipi
+m.operacao=Operacao_Venda_Compra(11)
+IF EMPTY(m.operacao)
+m.operacao=Operacao_Venda_Compra(2)
+ENDIF
+ThisForm.Cfop_do_Produto()
+*-
+ThisForm.Grava_Produto()
+ENDSCAN
+SELE saidanota1
+SET ORDER TO 1
+SEEK CPfilialusu+m.entnr_nota+m.entserie
+m.entfornec=saidanota1.saicliente	
+SELE cliente
+SET ORDER TO 1
+SEEK m.entfornec
+m.nomefornec=cliente.clinome
+SELE tabcondi
+LOCA FOR tabcondi.tcodebito=2
+IF FOUND()
+	   m.entcondi=tabcondi.tcocodigo
+ENDIF
+m.entdataemi=DATE()
+ThisForm.refresh()
+ThisForm.Swpagfra1.Page1.Vlrnota.Value=ThisForm.Swpagfra1.Page1.VlrTotal.Value
+ENDIF
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1N</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>EntNr_nota</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Value = (Entranota1.EntNr_nota)
+ControlSource = "m.entnr_nota"
+Enabled = .F.
+Format = "K"
+Height = 24
+InputMask = ""
+Left = 12
+TabIndex = 5
+Top = 48
+Visible = .T.
+Width = 84
+DisabledBackColor = 227,227,227
+ZOrderSet = 22
+Name = "EntNr_nota"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Init
+SwTexBox::Init()
+This.InputMask=REPLI("9",LEN(Entranota1.EntNr_nota))
+ENDPROC
+PROCEDURE Valid
+m.entNr_nota=StrZero(VAL(m.entNr_nota),LEN(Entranota1.EntNr_nota))
+m.entserie="M1"+SPACE(LEN(Entranota1.ENTSERIE)-2)
+IF ThisForm.especie_tela=3
+m.entserie="U"+SPACE(LEN(Entranota1.ENTSERIE)-1)
+ENDIF
+IF Thisform.especie_tela=4
+	m.entserie="CON"
+ENDIF
+
+
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ3</uniqueid>
+		<timestamp>1122720838</timestamp>
+		<class>swlabel</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>label</baseclass>
+		<objname>lblDataEmi</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+WordWrap = .T.
+Alignment = 2
+Caption = "Emissão "
+Height = 15
+Left = 592
+Top = 76
+Visible = .T.
+Width = 84
+TabIndex = 20
+ZOrderSet = 23
+Name = "lblDataEmi"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ4</uniqueid>
+		<timestamp>1122720838</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>EntDataEnt</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Value = (Entranota1.EntDataEnt)
+ControlSource = "m.entdataent"
+Enabled = .T.
+Format = ""
+Height = 24
+Left = 686
+TabIndex = 23
+Top = 93
+Visible = .T.
+Width = 84
+DisabledBackColor = 227,227,227
+ZOrderSet = 24
+Name = "EntDataEnt"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1225298674</timestamp>
+		<class>swlabel</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>label</baseclass>
+		<objname>Swlabel1</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+WordWrap = .T.
+Alignment = 0
+Caption = "Série"
+Height = 15
+Left = 100
+Top = 32
+Visible = .T.
+Width = 43
+TabIndex = 6
+ZOrderSet = 25
+Name = "Swlabel1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TT0ZB6PK</uniqueid>
+		<timestamp>1125996244</timestamp>
+		<class>swlabel</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>label</baseclass>
+		<objname>lblNumero</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+WordWrap = .T.
+Alignment = 0
+Caption = "Nr. Nota"
+Height = 15
+Left = 12
+Top = 32
+Visible = .T.
+Width = 65
+TabIndex = 4
+ZOrderSet = 25
+Name = "lblNumero"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TN12FZSK</uniqueid>
+		<timestamp>1122720838</timestamp>
+		<class>swlabel</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>label</baseclass>
+		<objname>Swlabel6</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+WordWrap = .T.
+Alignment = 2
+Caption = "------------ Vinculação do Item ------------"
+Height = 15
+Left = 12
+Top = 394
+Visible = .T.
+Width = 984
+TabIndex = 36
+ZOrderSet = 25
+Name = "Swlabel6"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0OMMSC</uniqueid>
+		<timestamp>1122720838</timestamp>
+		<class>swlabel</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>label</baseclass>
+		<objname>lblCondPag</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+WordWrap = .T.
+Caption = "Condição Pgto."
+Height = 15
+Left = 686
+Top = 32
+Width = 90
+TabIndex = 12
+ZOrderSet = 27
+Name = "lblCondPag"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JI8QW</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>EntFornec</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Value = (Entranota1.EntFornec)
+ControlSource = "m.entfornec"
+Enabled = .F.
+Format = "K"
+Height = 24
+InputMask = ""
+Left = 12
+TabIndex = 16
+Top = 93
+Visible = .T.
+Width = 84
+DisabledBackColor = 227,227,227
+ZOrderSet = 26
+Name = "EntFornec"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Init
+SwTexBox::Init()
+This.InputMask=REPLI("9",LEN(Entranota1.EntFornec))
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122720838</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>NomeFor</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Value = (Forneced.ForRazao)
+Enabled = .F.
+Format = ""
+Height = 24
+Left = 100
+TabIndex = 17
+Top = 93
+Visible = .T.
+Width = 273
+DisabledBackColor = 227,227,227
+DisabledForeColor = 0,0,0
+ZOrderSet = 28
+Name = "NomeFor"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JI8QX</uniqueid>
+		<timestamp>1122720838</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>cnpj</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Value = (Forneced.ForRazao)
+Enabled = .F.
+Format = ""
+Height = 24
+Left = 378
+TabIndex = 19
+Top = 93
+Visible = .T.
+Width = 208
+DisabledBackColor = 227,227,227
+DisabledForeColor = 0,0,0
+ZOrderSet = 28
+Name = "cnpj"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122599823</timestamp>
+		<class>swlabel</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>label</baseclass>
+		<objname>Swlabel2</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+WordWrap = .T.
+Alignment = 2
+Caption = "Entrada "
+Height = 15
+Left = 686
+Top = 76
+Visible = .T.
+Width = 84
+TabIndex = 22
+ZOrderSet = 31
+Name = "Swlabel2"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ6</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>EntDataEmi</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Value = (Saidanota1.EntDataEmi)
+ControlSource = "m.entdataemi"
+Enabled = .F.
+Format = ""
+Height = 24
+Left = 592
+TabIndex = 21
+Top = 93
+Visible = .T.
+Width = 84
+DisabledBackColor = 227,227,227
+ZOrderSet = 32
+Name = "EntDataEmi"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Valid
+IF EMPTY(m.entdataemi)
+IF MESSAGEBOX("Data iválida.",5+16,CPnomesys)=2
+ThisForm.Cancelar.Click
+RETURN +4
+ELSE
+m.entdataemi=CTOD("//")
+RETURN .F.
+ENDIF
+ELSE
+IF .NOT. EMPTY(m.entdataent)
+if this.value&gt;(m.entdataent+30)
+if MESSAGEBOX("Data de emissão 30 dias de diferença da data de entrada.Confirma?",4+48+256,CPnomesys)=7
+this.value=CTOD("//")
+RETURN .F.
+endif
+endif
+ENDIF
+ENDIF
+
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ7</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>VlrNota</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Alignment = 3
+Value = 0
+ControlSource = "m.vlrnota"
+Enabled = .F.
+Format = "K"
+Height = 24
+Left = 660
+TabIndex = 33
+Top = 136
+Visible = .T.
+Width = 110
+DisabledBackColor = 227,227,227
+ZOrderSet = 33
+Name = "VlrNota"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Init
+SwTexBox::Init()
+This.InputMask=ALLTRIM(CPpicvalor)
+
+ENDPROC
+PROCEDURE Valid
+IF This.Value&lt;=0
+IF MESSAGEBOX("Valor da nota invalido.",5+16,CPnomesys)=2
+ThisForm.Cancelar.Click
+RETURN +4
+ELSE
+RETURN .F.
+ENDIF
+ENDIF
+
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122599823</timestamp>
+		<class>swlabel</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>label</baseclass>
+		<objname>Swlabel4</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+WordWrap = .T.
+Alignment = 1
+Caption = "Valor Nota"
+Height = 15
+Left = 705
+Top = 119
+Visible = .T.
+Width = 65
+TabIndex = 32
+ZOrderSet = 34
+Name = "Swlabel4"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0OMMSD</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>DescriCond</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+BorderStyle = 1
+Value = (cliente.clinome)
+ControlSource = "tabcondi.tcodescri"
+Enabled = .F.
+Format = ""
+Height = 24
+Left = 774
+TabIndex = 14
+Top = 48
+Width = 227
+DisabledBackColor = 227,227,227
+DisabledForeColor = 0,0,0
+ZOrderSet = 35
+Name = "DescriCond"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Refresh
+*SELE Tabcondi
+*SET ORDER TO 1
+*SEEK m.EntCondi
+
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0NTVGH</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swcombox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>combobox</baseclass>
+		<objname>entmodelo</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .F.
+FontSize = 8
+ColumnCount = 1
+RowSourceType = 5
+RowSource = "CPvetorModelo"
+Value = (entrada1.entmodelo)
+ControlSource = "m.entmodelo"
+Enabled = .F.
+Height = 24
+Left = 161
+NumberOfElements = 0
+Style = 2
+TabIndex = 9
+Top = 48
+Visible = .T.
+Width = 105
+ZOrderSet = 37
+DisabledBackColor = 227,227,227
+Name = "entmodelo"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Valid
+IF This.value=24 .or. This.Value=25
+	*ThisForm.swpagfra1.Page1.cmdImportarxml.Enabled=.T.
+ENDIF
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122599823</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>Label8</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .T.
+FontSize = 8
+Alignment = 0
+Caption = "Localizado código EAN"
+Height = 15
+Left = 355
+Top = 364
+Visible = .T.
+Width = 137
+TabIndex = 39
+BackColor = 192,192,192
+ZOrderSet = 8
+Name = "Label8"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_50M0SVHOL</uniqueid>
+		<timestamp>1261726866</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>lblcodfab</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .T.
+FontSize = 8
+Alignment = 0
+Caption = "Localizado código Fab."
+Height = 15
+Left = 516
+Top = 364
+Visible = .F.
+Width = 120
+TabIndex = 39
+BackColor = 192,192,192
+ZOrderSet = 8
+Name = "lblcodfab"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1262062030</timestamp>
+		<class>swlabel</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>label</baseclass>
+		<objname>lbl_pedidocompra</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>AutoSize = .T.
+FontSize = 8
+WordWrap = .T.
+Alignment = 1
+Caption = "Pedido de Compra:"
+Height = 16
+Left = 761
+Top = 14
+Visible = .F.
+Width = 105
+TabIndex = 32
+ZOrderSet = 34
+Name = "lbl_pedidocompra"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_50R10YAFT</uniqueid>
+		<timestamp>1262062030</timestamp>
+		<class>swlabel</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>label</baseclass>
+		<objname>lbl_no_pedidocompra</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 11
+WordWrap = .T.
+Alignment = 0
+Caption = "000000"
+Height = 15
+Left = 876
+Top = 13
+Visible = .F.
+Width = 96
+TabIndex = 32
+ZOrderSet = 34
+Name = "lbl_no_pedidocompra"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swgrid</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>grid</baseclass>
+		<objname>Tabela</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>ColumnCount = 20
+FontSize = 8
+DeleteMark = .F.
+HeaderHeight = 22
+Height = 195
+Left = 12
+Panel = 1
+ReadOnly = .T.
+RecordSource = "item"
+RowHeight = 22
+TabIndex = 34
+Top = 164
+Width = 984
+Name = "Tabela"
+Column1.FontSize = 8
+Column1.ColumnOrder = 2
+Column1.ControlSource = "item.cprod"
+Column1.Width = 100
+Column1.ReadOnly = .T.
+Column1.Visible = .T.
+Column1.DynamicBackColor = "ThisForm.Retornarcor('nloc')"
+Column1.Name = "Column1"
+Column2.FontSize = 8
+Column2.ColumnOrder = 3
+Column2.ControlSource = "item.xprod"
+Column2.Width = 295
+Column2.ReadOnly = .T.
+Column2.Visible = .T.
+Column2.DynamicBackColor = "ThisForm.Retornarcor('xprod')"
+Column2.Name = "xprod"
+Column3.FontSize = 8
+Column3.Alignment = 2
+Column3.ColumnOrder = 4
+Column3.ControlSource = "item.uTrib"
+Column3.Width = 45
+Column3.ReadOnly = .T.
+Column3.Visible = .T.
+Column3.DynamicBackColor = "ThisForm.Retornarcor()"
+Column3.Name = "Column3"
+Column4.FontSize = 8
+Column4.ColumnOrder = 5
+Column4.ControlSource = "item.qTrib"
+Column4.Width = 100
+Column4.ReadOnly = .T.
+Column4.Visible = .T.
+Column4.DynamicBackColor = "ThisForm.Retornarcor()"
+Column4.InputMask = "999,999,999.999"
+Column4.Name = "Column4"
+Column5.FontSize = 8
+Column5.ColumnOrder = 6
+Column5.ControlSource = "item.vUnTrib"
+Column5.Width = 100
+Column5.ReadOnly = .T.
+Column5.Visible = .T.
+Column5.DynamicBackColor = "ThisForm.Retornarcor()"
+Column5.InputMask = "999,999,999.99"
+Column5.Name = "Column5"
+Column6.FontSize = 8
+Column6.ColumnOrder = 8
+Column6.ControlSource = "item.vprod"
+Column6.Width = 100
+Column6.ReadOnly = .T.
+Column6.Visible = .T.
+Column6.DynamicBackColor = "ThisForm.Retornarcor('vprod')"
+Column6.InputMask = "999,999,999.99"
+Column6.Name = "vprod"
+Column7.FontSize = 8
+Column7.ColumnOrder = 7
+Column7.ControlSource = "item.vDesc"
+Column7.Width = 87
+Column7.ReadOnly = .T.
+Column7.Visible = .T.
+Column7.DynamicBackColor = "ThisForm.Retornarcor()"
+Column7.InputMask = "999,999,999.99"
+Column7.Name = "Column7"
+Column8.FontSize = 8
+Column8.Alignment = 2
+Column8.ColumnOrder = 12
+Column8.ControlSource = "item.icms_cst"
+Column8.Width = 39
+Column8.ReadOnly = .T.
+Column8.Visible = .T.
+Column8.DynamicBackColor = "ThisForm.Retornarcor()"
+Column8.Name = "Column8"
+Column9.FontSize = 8
+Column9.ColumnOrder = 13
+Column9.ControlSource = "item.icms_pICMS"
+Column9.Width = 50
+Column9.ReadOnly = .T.
+Column9.Visible = .T.
+Column9.DynamicBackColor = "ThisForm.Retornarcor()"
+Column9.InputMask = "999.99"
+Column9.Name = "Column9"
+Column10.FontSize = 8
+Column10.ColumnOrder = 14
+Column10.ControlSource = "item.icms_vICMSST"
+Column10.Width = 90
+Column10.ReadOnly = .T.
+Column10.Visible = .T.
+Column10.DynamicBackColor = "ThisForm.Retornarcor('icms_vICMSST')"
+Column10.InputMask = "999,999,999.99"
+Column10.Name = "icms_vICMSST"
+Column11.FontSize = 8
+Column11.ColumnOrder = 15
+Column11.ControlSource = "item.ipi_vIPI"
+Column11.Width = 90
+Column11.ReadOnly = .T.
+Column11.Visible = .T.
+Column11.DynamicBackColor = "ThisForm.Retornarcor('ipi_vIPI')"
+Column11.InputMask = "999,999,999.99"
+Column11.Name = "Column11"
+Column12.FontSize = 8
+Column12.Alignment = 2
+Column12.ColumnOrder = 16
+Column12.ControlSource = "item.ncm"
+Column12.Width = 90
+Column12.ReadOnly = .T.
+Column12.Visible = .T.
+Column12.DynamicBackColor = "ThisForm.Retornarcor()"
+Column12.Name = "Column12"
+Column13.FontSize = 8
+Column13.Alignment = 2
+Column13.ColumnOrder = 17
+Column13.ControlSource = "item.cProdANP"
+Column13.Width = 90
+Column13.ReadOnly = .T.
+Column13.Visible = .T.
+Column13.DynamicBackColor = "ThisForm.Retornarcor()"
+Column13.Name = "Column13"
+Column14.FontSize = 8
+Column14.Alignment = 2
+Column14.ColumnOrder = 18
+Column14.ControlSource = "item.ean"
+Column14.Width = 100
+Column14.ReadOnly = .T.
+Column14.Visible = .T.
+Column14.DynamicBackColor = "ThisForm.Retornarcor()"
+Column14.Name = "Column14"
+Column15.FontSize = 8
+Column15.Alignment = 2
+Column15.ColumnOrder = 10
+Column15.ControlSource = "item.cfop"
+Column15.Width = 50
+Column15.ReadOnly = .T.
+Column15.DynamicBackColor = "ThisForm.Retornarcor()"
+Column15.Name = "Column15"
+Column16.FontSize = 8
+Column16.Alignment = 2
+Column16.ColumnOrder = 11
+Column16.ControlSource = "item.orig"
+Column16.Width = 40
+Column16.ReadOnly = .T.
+Column16.DynamicBackColor = "ThisForm.Retornarcor()"
+Column16.Name = "Column16"
+Column17.FontSize = 8
+Column17.ColumnOrder = 9
+Column17.ControlSource = "item.totalvinculado"
+Column17.Width = 100
+Column17.ReadOnly = .T.
+Column17.DynamicBackColor = "ThisForm.Retornarcor()"
+Column17.Name = "Column17"
+Column18.FontSize = 8
+Column18.ColumnOrder = 1
+Column18.ControlSource = "item.vincular"
+Column18.Width = 18
+Column18.ReadOnly = .F.
+Column18.Sparse = .F.
+Column18.Name = "Column18"
+Column19.FontSize = 8
+Column19.ControlSource = "item.icmstpro_conf"
+Column19.Width = 80
+Column19.ReadOnly = .T.
+Column19.Name = "Column19"
+Column20.FontSize = 8
+Column20.ControlSource = "item.ipi_conf"
+Column20.Width = 80
+Column20.ReadOnly = .T.
+Column20.Name = "Column21"
+</properties>
+		<protected/>
+		<methods>PROCEDURE AfterRowColChange
+LPARAMETERS nColIndex
+ThisForm.Tabela2.Refresh()
+ENDPROC
+PROCEDURE BeforeRowColChange
+LPARAMETERS nColIndex
+ThisForm.Tabela2.Refresh()
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1N</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column1</parent>
+		<properties>FontSize = 8
+Caption = "Código Fabricante"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZX70P</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column1</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TT0ZB6PK</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.xprod</parent>
+		<properties>FontSize = 8
+Caption = "Descrição Fabricante"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAIV</uniqueid>
+		<timestamp>1122207381</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.xprod</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAIW</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column3</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Caption = "Unidade"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAIX</uniqueid>
+		<timestamp>1122207381</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column3</parent>
+		<properties>FontSize = 8
+Alignment = 2
+BorderStyle = 0
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAIY</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column4</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Caption = "Quantidade"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJF</uniqueid>
+		<timestamp>1122207381</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column4</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+InputMask = "999,999,999.999"
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAIZ</uniqueid>
+		<timestamp>1122207381</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column5</parent>
+		<properties>FontSize = 8
+Alignment = 1
+Caption = "Valor Unitário"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ1</uniqueid>
+		<timestamp>1122207381</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column5</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+InputMask = "999,999,999.99"
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ0</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.vprod</parent>
+		<properties>FontSize = 8
+Alignment = 1
+Caption = "Total do Item"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ2</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.vprod</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+InputMask = "999,999,999.999"
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column7</parent>
+		<properties>FontSize = 8
+Alignment = 1
+Caption = "Desconto"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column7</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+InputMask = "999,999,999.99"
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TT0ZB6PL</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column8</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Caption = "CST"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ6</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column8</parent>
+		<properties>FontSize = 8
+Alignment = 2
+BorderStyle = 0
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ7</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column9</parent>
+		<properties>FontSize = 8
+Caption = "Aliq. ICMS"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ8</uniqueid>
+		<timestamp>1122207381</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column9</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+InputMask = "999.99"
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0NTVGG</uniqueid>
+		<timestamp>1122654483</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.icms_vICMSST</parent>
+		<properties>FontSize = 8
+Alignment = 1
+Caption = "ICMS ST"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122207381</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.icms_vICMSST</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+InputMask = "999,999,999.99"
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TN106BHP</uniqueid>
+		<timestamp>1122207381</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column11</parent>
+		<properties>FontSize = 8
+Caption = "Valor IPI"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0N90LM</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column11</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+InputMask = "999,999,999.99"
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0N90LN</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column12</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Caption = "NCM"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ3</uniqueid>
+		<timestamp>1122207381</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column12</parent>
+		<properties>FontSize = 8
+Alignment = 2
+BorderStyle = 0
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JZAJ4</uniqueid>
+		<timestamp>1122204738</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column13</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Caption = "Cod. ANP"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0N90LO</uniqueid>
+		<timestamp>1122207381</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column13</parent>
+		<properties>FontSize = 8
+Alignment = 2
+BorderStyle = 0
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122207381</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column14</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Caption = "EAN"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JI8QW</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column14</parent>
+		<properties>FontSize = 8
+Alignment = 2
+BorderStyle = 0
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122207381</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column15</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Caption = "CFOP"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JI8QX</uniqueid>
+		<timestamp>1122207381</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column15</parent>
+		<properties>Alignment = 2
+BorderStyle = 0
+Margin = 0
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0NTVGH</uniqueid>
+		<timestamp>1122209031</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column16</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Caption = "Origem"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TN0XSK17</uniqueid>
+		<timestamp>1122209882</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column16</parent>
+		<properties>Alignment = 2
+BorderStyle = 0
+Margin = 0
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TN0XSK19</uniqueid>
+		<timestamp>1122205120</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column17</parent>
+		<properties>FontSize = 8
+Alignment = 1
+Caption = "Total Vinculado"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TN0XSK1A</uniqueid>
+		<timestamp>1122205120</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column17</parent>
+		<properties>BorderStyle = 0
+Margin = 0
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TN13LZ3L</uniqueid>
+		<timestamp>1122210714</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column18</parent>
+		<properties>Caption = ""
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TN13LZ3M</uniqueid>
+		<timestamp>1122211244</timestamp>
+		<class>swchkbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>checkbox</baseclass>
+		<objname>Swchkbox1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column18</parent>
+		<properties>Top = 30
+Left = 51
+Alignment = 0
+Caption = ""
+ReadOnly = .F.
+Name = "Swchkbox1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV1113QB</uniqueid>
+		<timestamp>1122733335</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column19</parent>
+		<properties>Caption = "ST"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV1113QC</uniqueid>
+		<timestamp>1122732563</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column19</parent>
+		<properties>BorderStyle = 0
+Margin = 0
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV1113QD</uniqueid>
+		<timestamp>1122733335</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column21</parent>
+		<properties>Caption = "IPI"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV1113QE</uniqueid>
+		<timestamp>1122732563</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela.Column21</parent>
+		<properties>BorderStyle = 0
+Margin = 0
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3UK0PMJ9A</uniqueid>
+		<timestamp>1124425515</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>arquivoxml</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Alignment = 3
+Value =  
+ControlSource = "m.arquivoxml"
+Format = ""
+Height = 10
+InputMask = ""
+Left = 887
+TabIndex = 77
+Top = 113
+Visible = .F.
+Width = 13
+ZOrderSet = 46
+Name = "arquivoxml"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swcombut</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>commandbutton</baseclass>
+		<objname>cmdvincular</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 360
+Left = 36
+Height = 31
+Width = 132
+FontSize = 8
+Caption = "Vincular Iten(s) [F3]"
+TabIndex = 35
+Name = "cmdvincular"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Click
+SELECT item
+IF NOT EOF()
+	m.recno_item=RECNO()
+	SELECT item
+	IF item.vincular=0
+		REPLACE vincular WITH 1
+	ENDIF
+	SELECT item
+	m.qTrib_x=0
+	m.vUnTrib_x=0
+	m.icms_vICMSST_x=0
+	m.icms_vbcst_x=0
+	m.vdesc_x=0
+	m.ipi_vIPI_x=0
+	m.cprod_x=''
+	m.xprod_x=''
+	m.cProdANP_x=''
+	m.ncm_x=''
+	m.total_rateio_item=0
+	m.vprod_conf=0
+	m.icms_vICMSST_conf=0
+	m.icms_vbcst_conf=0
+	m.ipi_vIPI_conf=0
+	m.tot_item_x=0
+	SCAN
+		IF item.vincular=1
+			IF EMPTY(m.cprod_x) &amp;&amp;pega estes dados sempre do primeiro selecionado
+				m.cprod_x=item.cprod
+				m.cProdANP_x=item.cProdANP
+				m.ncm_x=item.ncm
+				m.vUnTrib_x=item.vUnTrib
+				m.xprod_x=item.xprod
+			ENDIF
+			m.qTrib_x=m.qTrib_x+item.qTrib
+			m.icms_vICMSST_x=m.icms_vICMSST_x+item.icms_vICMSST
+			m.icms_vbcst_x=m.icms_vbcst_x+item.icms_vbcst
+			m.vdesc_x=m.vdesc_x+item.vdesc
+			m.ipi_vIPI_x=m.ipi_vIPI_x+item.ipi_vIPI
+			m.total_rateio_item=m.total_rateio_item+(item.qTrib*item.vUnTrib)
+			m.vprod_conf=m.vprod_conf+(item.qTrib*item.vUnTrib)
+			m.icms_vICMSST_conf=m.icms_vICMSST_conf+item.icms_vICMSST
+			m.icms_vbcst_conf=m.icms_vbcst_conf+item.icms_vbcst
+			m.ipi_vIPI_conf=m.ipi_vIPI_conf+item.ipi_vIPI
+			m.tot_item_x=item.vprod
+		ENDIF
+	ENDSCAN
+	m.valor_retorno=0
+	SELECT item
+	SET RELATION TO
+	*-Localizando o item relacionado do fornecedor
+	m.item_localizado=''
+	m.operacao_x=0
+	m.conversao_x=0
+	IF m.recno_item&gt;0
+		GO m.recno_item
+	ENDIF
+	m.digito_localizado=''
+	IF CPcodigoempresa="03862926000184" &amp;&amp;jrc
+		m.retornoloc=thisform.locprod(item.ean,item.cprod)
+		IF m.retornoloc=1 .or. m.retornoloc=3
+			m.item_localizado=produto.procodigo
+			m.digito_localizado=produto.prodigito
+		ENDIF
+	else
+		IF .not. EMPTY(item.ean)
+			SELECT produto
+			SET ORDER TO barra
+			SEEK ALLTRIM(item.ean)
+			IF FOUND()
+				m.item_localizado=produto.procodigo
+				m.digito_localizado=produto.prodigito
+			ENDIF
+		endif
+	endif	
+	IF CPcodigoempresa='71507149000100' &amp;&amp;Vitoria
+		IF CPfilialusu='01' &amp;&amp;se for loja da esquina
+			m.item_localizado=''
+			m.digito_localizado=''
+		ENDIF
+	ENDIF
+	IF EMPTY(m.item_localizado)
+		SELECT ite_nfe
+		SET ORDER TO 2
+		SEEK cliente.clicpf_cnpj+ALLTRIM(m.cprod_x)
+		IF FOUND()
+			m.item_localizado=ite_nfe.itecodigo
+			m.operacao_x=ite_nfe.iteoperacao
+			m.conversao_x=ite_nfe.iteconversao
+		ELSE
+			SELECT ite_nfe
+			SET ORDER TO 3
+			SEEK SUBSTR(cliente.clicpf_cnpj,1,8)+ALLTRIM(m.cprod_x)
+			IF FOUND()
+				m.item_localizado=ite_nfe.itecodigo
+				m.operacao_x=ite_nfe.iteoperacao
+				m.conversao_x=ite_nfe.iteconversao
+			ENDIF	
+		ENDIF
+	ENDIF 	
+	*-
+	*-
+	m.especie_tela=1
+	IF ThisForm.entmodelo.Value=25
+		m.especie_tela=3
+	ENDIF
+	SELECT item
+	DO FORM Aeentpro WITH 1,Thisform.Top,m.especie_tela,m.item_localizado,m.digito_localizado,m.qTrib_x,(m.total_rateio_item/m.qTrib_x),m.icms_vICMSST_x,m.vdesc_x,m.ipi_vIPI_x,m.cprod_x,m.cProdANP_x,m.ncm_x,m.total_rateio_item,m.xprod_x,m.conversao_x,m.operacao_x,m.icms_vbcst_x,m.tot_item_x TO m.valor_retorno
+	SELECT resumoe
+	SET ORDER TO codigo_f
+	SELECT item
+	SCAN
+		IF item.vincular=1
+			SELECT resumoe
+			SET ORDER TO codigo_f
+			SEEK ALLTRIM(m.cprod_x)
+			m.icmstpro_conf=0
+			m.ipi_conf=0
+			SCAN WHILE ALLTRIM(m.cprod_x)=ALLTRIM(resumoe.codigofabricante)
+				m.icmstpro_conf=m.icmstpro_conf+resumoe.icmstpro
+				m.ipi_conf=m.ipi_conf+resumoe.ipi
+			ENDSCAN
+			SELECT item
+			REPLACE totalvinculado WITH totalvinculado+(((item.qTrib*item.vUnTrib)/m.total_rateio_item)*m.valor_retorno)
+			REPLACE vincular WITH 0
+			REPLACE cprod_2 WITH m.cprod_x
+			REPLACE vprod_conf WITH m.vprod_conf
+			REPLACE totalvinculado_conf WITH totalvinculado_conf+m.valor_retorno
+			REPLACE icmstpro_conf WITH m.icmstpro_conf
+			REPLACE ipi_conf WITH m.ipi_conf
+			IF CPcodigoempresa="03862926000184" &amp;&amp;JRC
+				m.atualiza_info=.f.
+				SELECT resumoe
+				SEEK ALLTRIM(m.cprod_x)
+				SELECT PRODUTO
+				SET ORDER TO 1
+				SEEK RESUMOE.PRODUTO+RESUMOE.DIGITO
+				IF FOUND()
+					IF ALLTRIM(produto.proclassfis2)#ALLTRIM(item.ncm) AND NOT EMPTY(item.ncm)
+						m.atualiza_info=.t.
+					endif
+					IF alltrim(produto.procest)#ALLTRIM(item.cest) AND NOT EMPTY(item.cest)
+						m.atualiza_info=.t.
+					ENDIF
+					IF thisform.locprodean(item.ean)=0
+						m.atualiza_info=.t.							
+					ENDIF
+					IF m.atualiza_info=.f. .and. EMPTY(ALLTRIM(item.ean))
+						m.atualiza_info=.t.
+						SELECT produto_fornecedor
+						SET ORDER TO 2
+						SEEK RESUMOE.PRODUTO+RESUMOE.DIGITO+strzero(ALLTRIM(produto_fornecedor.pf_fornecedor),6)
+						IF FOUND()
+							SCAN WHILE produto_fornecedor.pf_procodigo=RESUMOE.PRODUTO .and. strzero(ALLTRIM(produto_fornecedor.pf_fornecedor),6)=thisform.entfornec.Value
+								IF ALLTRIM(item.cprod)=ALLTRIM(produto_fornecedor.pf_codigofornec)
+									m.atualiza_info=.f.
+								endif
+							endscan
+						ENDIF
+					endif
+					IF m.atualiza_info
+						IF MESSAGEBOX("Atenção, algumas informações cadastrais do item vinculado divergem das informações do item na nota.Deseja atualizar? ",4+16+256,CPnomesys2)=6
+							DO FORM aeatualizainfoproent with RESUMOE.PRODUTO,RESUMOE.DIGITO,item.ean,item.cest,item.ncm,item.cprod,item.xprod,thisform.entfornec.Value
+						endif
+					endif	
+				ENDIF
+				SELECT resumoe
+			endif
+		ENDIF
+	ENDSCAN
+	ThisForm.Ajustando_valores()
+	m.cprod_x=''
+	SELECT item
+	SET RELATION TO item.cprod_2 INTO resumoe
+	IF m.recno_item&gt;0
+		GO m.recno_item
+	ENDIF
+	IF CPcodigoempresa="03862926000184" &amp;&amp;JRC
+		m.foundnext=.f.
+		m.pos_temp=recno_item+1
+		DO WHILE m.pos_temp&lt;=RECCOUNT()
+			GO m.pos_temp
+			IF item.totalvinculado&gt;0 .and. item.totalvinculado&gt;=(item.vprod-item.vdesc)
+				m.pos_temp=m.pos_temp+1
+			ELSE
+				m.foundnext=.t.
+				EXIT
+			ENDIF
+		ENDDO
+		IF m.recno_item&gt;0 .and. m.foundnext=.f. .and. recno_item&lt;=RECCOUNT()
+			GO m.recno_item
+		ENDIF
+		thisform.tabela.Refresh()
+		THISFORM.cmdvincular.SetFocus()
+	ENDIF	
+endif
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1N</uniqueid>
+		<timestamp>1191531533</timestamp>
+		<class>swshape</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>shape</baseclass>
+		<objname>shpvinculado_total</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 519
+Left = 23
+Height = 18
+Width = 30
+Curvature = 10
+BackColor = 150,203,203
+Name = "shpvinculado_total"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0O1394</uniqueid>
+		<timestamp>1122720149</timestamp>
+		<class>swshape</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>shape</baseclass>
+		<objname>shpvinculado_parcial</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 538
+Left = 24
+Height = 18
+Width = 30
+Curvature = 10
+BackColor = 255,255,138
+Name = "shpvinculado_parcial"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0OSQ71</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swcombut</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>commandbutton</baseclass>
+		<objname>cmdexcluirvinculo</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 360
+Left = 180
+Height = 31
+Width = 132
+FontSize = 8
+Caption = "Excluir Vinculação"
+TabIndex = 35
+Name = "cmdexcluirvinculo"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Click
+SELECT item
+SET RELATION TO
+SELECT resumoe
+SET ORDER TO codigo_f
+SEEK ALLTRIM(item.cprod)
+SCAN WHILE ALLTRIM(item.cprod)=ALLTRIM(resumoe.codigofabricante)
+	=LOOPDELE()
+	m.vlrtotal=m.vlrtotal-resumoe.TOTALITEM
+	IF resumoe.descontonom#0 .and. CPcodigoempresa="03862926000184" &amp;&amp;jrc
+		m.subtotal=m.subtotal-resumoe.subtotitem+resumoe.descontonom
+	ELSE
+		m.subtotal=m.subtotal-resumoe.subtotitem
+	endif
+ENDSCAN
+SELECT item
+REPLACE totalvinculado WITH 0
+REPLACE vincular  WITH 0
+REPLACE cprod_2 WITH ''
+REPLACE vprod_conf WITH 0
+REPLACE totalvinculado_conf WITH 0
+*-
+ThisForm.Ajustando_valores()
+*-
+SELECT item
+SET RELATION TO item.cprod_2 INTO resumoe
+
+
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKE</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>swgrid</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>grid</baseclass>
+		<objname>Tabela2</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>ColumnCount = 10
+FontSize = 8
+DeleteMark = .F.
+HeaderHeight = 22
+Height = 107
+Left = 12
+Panel = 1
+ReadOnly = .T.
+RecordSource = "resumoE"
+RowHeight = 22
+TabIndex = 37
+Top = 410
+Width = 984
+Name = "Tabela2"
+Column1.FontSize = 8
+Column1.ControlSource = "resumoE.produto"
+Column1.Width = 126
+Column1.ReadOnly = .T.
+Column1.Visible = .T.
+Column1.Name = "Column1"
+Column2.FontSize = 8
+Column2.ColumnOrder = 3
+Column2.ControlSource = "resumoE.descri"
+Column2.Width = 300
+Column2.ReadOnly = .T.
+Column2.Visible = .T.
+Column2.Name = "Column2"
+Column3.FontSize = 8
+Column3.Alignment = 2
+Column3.ColumnOrder = 4
+Column3.ControlSource = "resumoE.un"
+Column3.Width = 50
+Column3.ReadOnly = .T.
+Column3.Visible = .T.
+Column3.Name = "Column3"
+Column4.FontSize = 8
+Column4.ColumnOrder = 5
+Column4.ControlSource = "resumoE.quanti"
+Column4.Width = 100
+Column4.ReadOnly = .F.
+Column4.Visible = .T.
+Column4.InputMask = "999,999,999.999"
+Column4.Name = "Column4"
+Column5.FontSize = 8
+Column5.ColumnOrder = 6
+Column5.ControlSource = "resumoE.unitario"
+Column5.Width = 100
+Column5.ReadOnly = .T.
+Column5.Visible = .T.
+Column5.InputMask = "999,999,999.99"
+Column5.Name = "Column5"
+Column6.FontSize = 8
+Column6.ColumnOrder = 8
+Column6.ControlSource = "resumoE.totalitem"
+Column6.Width = 119
+Column6.ReadOnly = .T.
+Column6.Visible = .T.
+Column6.InputMask = "999,999,999.99"
+Column6.Name = "Column6"
+Column7.FontSize = 8
+Column7.ColumnOrder = 7
+Column7.ControlSource = "resumoE.desconto"
+Column7.Width = 100
+Column7.ReadOnly = .T.
+Column7.Visible = .T.
+Column7.InputMask = "999,999,999.99"
+Column7.Name = "Column7"
+Column8.FontSize = 8
+Column8.ColumnOrder = 2
+Column8.ControlSource = "resumoE.digito"
+Column8.Width = 50
+Column8.ReadOnly = .T.
+Column8.Visible = .T.
+Column8.Name = "Column17"
+Column9.FontSize = 8
+Column9.ControlSource = "RESUMOE.icmstpro"
+Column9.Width = 100
+Column9.ReadOnly = .F.
+Column9.Visible = .T.
+Column9.Name = "Column9"
+Column10.FontSize = 8
+Column10.ControlSource = "resumoe.ipi"
+Column10.Width = 100
+Column10.ReadOnly = .F.
+Column10.Visible = .T.
+Column10.Name = "Column10"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKG</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column1</parent>
+		<properties>FontSize = 8
+Caption = "Código"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKH</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column1</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKI</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column2</parent>
+		<properties>FontSize = 8
+Caption = "Descrição"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKJ</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column2</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKK</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column3</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Caption = "Unidade"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKL</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column3</parent>
+		<properties>FontSize = 8
+Alignment = 2
+BorderStyle = 0
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKM</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column4</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Caption = "Quantidade"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKN</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column4</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+InputMask = "999,999,999.999"
+Margin = 0
+ReadOnly = .F.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Valid
+ThisForm.Ajustando_valores()
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKO</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column5</parent>
+		<properties>FontSize = 8
+Alignment = 1
+Caption = "Valor Unitário"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKP</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column5</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+InputMask = "999,999,999.99"
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Valid
+ThisForm.Ajustando_valores()
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKQ</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column6</parent>
+		<properties>FontSize = 8
+Alignment = 1
+Caption = "Total do Item"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKR</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column6</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+InputMask = "999,999,999.999"
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKS</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column7</parent>
+		<properties>FontSize = 8
+Alignment = 1
+Caption = "Desconto"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKT</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column7</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+InputMask = "999,999,999.99"
+Margin = 0
+ReadOnly = .T.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKU</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column17</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Caption = "Dígito"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKV</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column17</parent>
+		<properties>BorderStyle = 0
+Margin = 0
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKW</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column9</parent>
+		<properties>FontSize = 8
+Alignment = 1
+Caption = "ICMS ST"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKX</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column9</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+Margin = 0
+ReadOnly = .F.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Valid
+ThisForm.Ajustando_valores()
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKY</uniqueid>
+		<timestamp>1122726685</timestamp>
+		<class>header</class>
+		<classloc/>
+		<baseclass>header</baseclass>
+		<objname>Header1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column10</parent>
+		<properties>FontSize = 8
+Alignment = 1
+Caption = "IPI"
+Name = "Header1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0URKKZ</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>textbox</class>
+		<classloc/>
+		<baseclass>textbox</baseclass>
+		<objname>Text1</objname>
+		<parent>AEENTNOT_XML.Tabela2.Column10</parent>
+		<properties>FontSize = 8
+BorderStyle = 0
+Margin = 0
+ReadOnly = .F.
+Visible = .T.
+ForeColor = 0,0,0
+BackColor = 255,255,255
+Name = "Text1"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Valid
+ThisForm.Ajustando_valores()
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0Y7OOL</uniqueid>
+		<timestamp>1123124596</timestamp>
+		<class>swshape</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>shape</baseclass>
+		<objname>shperro</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 519
+Left = 206
+Height = 18
+Width = 30
+Curvature = 10
+BackColor = 255,74,74
+Name = "shperro"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TW0N30PG</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swcombut</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>commandbutton</baseclass>
+		<objname>cmdvalidar</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 520
+Left = 444
+Height = 31
+Width = 132
+FontSize = 8
+Caption = "Validar Dados"
+TabIndex = 38
+Name = "cmdvalidar"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Click
+m.total_st_xml=0
+m.total_ipi_xml=0
+m.total_item_xml=0
+SELECT item
+SCAN
+	m.total_st_xml=m.total_st_xml+item.icms_vICMSST
+	m.total_ipi_xml=m.total_ipi_xml+item.ipi_vIPI
+	m.total_item_xml=ROUND(item.qTrib*item.vUnTrib,2)
+ENDSCAN
+*-
+m.total_st_lanc=0
+m.total_ipi_lanc=0
+m.total_item_lanc=0
+SELECT resumoe
+SCAN
+	m.total_st_lanc=m.total_st_lanc+resumoe.icmstpro
+	m.total_ipi_lanc=m.total_ipi_lanc+resumoe.ipi
+	m.total_item_lanc=ROUND(resumoe.quanti*resumoe.unitario,2)
+ENDSCAN
+*-
+IF m.total_ipi_xml#m.total_ipi_lanc
+	IF MESSAGEBOX('Atenção existe diferença nos valores do IPI.Confirma mesmo assim?',4+16+256,CPnomesys2)#6
+		RETURN .f.
+	ENDIF	
+ENDIF
+IF m.total_st_xml#m.total_st_lanc
+	IF MESSAGEBOX('Atenção existe diferença nos valores do ICMSST.Confirma mesmo assim?',4+16+256,CPnomesys2)#6
+		RETURN .F.
+	ENDIF	
+ENDIF
+IF m.total_item_lanc#m.total_item_lanc
+	IF MESSAGEBOX('Atenção existe diferença nos valores dos itens.Confirma mesmo assim?',4+16+256,CPnomesys2)#6
+		RETURN .F.
+	ENDIF	
+ENDIF
+RETURN .T.
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3UL0ZZ33Y</uniqueid>
+		<timestamp>1278888690</timestamp>
+		<class>swcombut</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>commandbutton</baseclass>
+		<objname>cmdgerarpdf</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 3
+Left = 505
+Height = 28
+Width = 240
+FontSize = 8
+Caption = "Gerar PDF"
+TabIndex = 38
+Name = "cmdgerarpdf"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Click
+IF EMPTY(ThisForm.Arquivo)
+	=MESSAGEBOX('Atenção!!! Não tem nenhum XML anexado, não vai ser possível gerar o PDF.',0+16,CPnomesys2)
+	RETURN
+ENDIF
+m.xml=FILETOSTR(ALLTRIM(ThisForm.Arquivo))
+IF EMPTY(m.xml)
+	=MESSAGEBOX('Atenção!!! O XML esta sem informação, não vai ser possível gerar o PDF.',0+16,CPnomesys2)
+	RETURN
+ENDIF
+IF m.entmodelo=24 &amp;&amp;NFE
+	m.OrigDadosEmissor=''
+	m.quadroRecibo='S'
+	m.quadroFatura='S'
+	m.quadroISSQN='N'
+	m.DPEC=''
+	m.separadorItem='B'
+	m.gravaPDF=''
+	m.msgResultado=''
+	objNFeUtil = CREATEOBJECTEX("NFe_Util_2G.Util","","")
+	cResultado = objNFeUtil.geraPdfDANFE(XML, OrigDadosEmissor, quadroRecibo, quadroFatura, quadroISSQN, DPEC, separadorItem, gravaPDF, @msgResultado)
+	IF .not. ALLTRIM(STR(cResultado))$'7900*7901*7911'
+		=MESSAGEBOX('Não foi possível gerar o PDF da NFE.'+msgResultado,0+16,CPnomesys2)
+	ENDIF
+ENDIF	
+IF m.entmodelo=25 &amp;&amp;CTE
+	m.logo=''
+	m.quadroRecibo='S'
+	m.visualizar='S'
+	m.parametros=''
+	m.msgResultado=''
+	objCTeUtil= CREATEOBJECTEX("CTe_Util.Util","","")
+	cResultado = objCTeUtil.geraPdfDACTE(XML, logo, quadroRecibo, visualizar, parametros, msgResultado)
+	IF .not. ALLTRIM(STR(cResultado))$'7900*7901*7911'
+		=MESSAGEBOX('Não foi possível gerar o PDF do DACTE.'+msgResultado,0+16,CPnomesys2)
+	ENDIF
+ENDIF	
+
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1N</uniqueid>
+		<timestamp>1261726866</timestamp>
+		<class>swshape</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>shape</baseclass>
+		<objname>shpean</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 364
+Left = 321
+Height = 18
+Width = 30
+Curvature = 10
+BackColor = 128,128,255
+Name = "shpean"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1N</uniqueid>
+		<timestamp>1261726866</timestamp>
+		<class>swshape</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>shape</baseclass>
+		<objname>shpeannl</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 364
+Left = 640
+Height = 18
+Width = 30
+Curvature = 10
+BackColor = 252,255,191
+Name = "shpeannl"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_4ZO0PJ352</uniqueid>
+		<timestamp>1261726866</timestamp>
+		<class>swshape</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>shape</baseclass>
+		<objname>shpeanodc</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 364
+Left = 835
+Height = 18
+Width = 30
+Curvature = 10
+Visible = .F.
+BackColor = 240,159,132
+Name = "shpeanodc"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1331190132</timestamp>
+		<class>swcombut</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>commandbutton</baseclass>
+		<objname>cmd_verinfoprod</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 130
+Left = 845
+Height = 31
+Width = 151
+FontSize = 8
+Caption = "Ver. Info. Cad. dos Itens"
+TabIndex = 35
+Visible = .T.
+Name = "cmd_verinfoprod"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Click
+SELECT resumoe
+SET ORDER TO codigo_f
+SEEK ALLTRIM(item.cprod)
+IF FOUND()
+	DO FORM aeatualizainfoproent with RESUMOE.PRODUTO,RESUMOE.DIGITO,item.ean,item.cest,item.ncm,item.cprod,item.xprod,thisform.entfornec.value
+ELSE
+	=MESSAGEBOX('Atenção!!!É necessário vincular o produto ',0+16,CPnomesys2)
+endif
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_50M0SVHOM</uniqueid>
+		<timestamp>1261726866</timestamp>
+		<class>swshape</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>shape</baseclass>
+		<objname>shcodfab</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 364
+Left = 482
+Height = 18
+Width = 30
+Curvature = 10
+Visible = .F.
+BackColor = 164,255,164
+Name = "shcodfab"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>COMMENT</platform>
+		<uniqueid>RESERVED</uniqueid>
+		<timestamp>0</timestamp>
+		<class/>
+		<classloc/>
+		<baseclass/>
+		<objname/>
+		<parent/>
+		<properties>Arial, 1, 10, 6, 16, 13, 34, 3, 0
+Arial, 1, 8, 5, 14, 11, 29, 3, 0
+Arial, 0, 8, 5, 14, 11, 29, 3, 0
+Arial, 0, 9, 5, 15, 12, 32, 3, 0
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+</VFPData>
