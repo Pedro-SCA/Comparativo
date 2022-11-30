@@ -59,15 +59,15 @@ Name = "Dataenvironment"
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3SU0ZKI1N</uniqueid>
-		<timestamp>1331190132</timestamp>
+		<timestamp>1422023491</timestamp>
 		<class>swform</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>form</baseclass>
 		<objname>AEENTNOT_XML</objname>
 		<parent/>
 		<properties>DataSession = 1
-Height = 562
-Width = 1006
+Height = 554
+Width = 1004
 DoCreate = .T.
 AutoCenter = .T.
 Caption = "Importação dos dados de XML NFe e Cte"
@@ -76,6 +76,7 @@ Enabled = .T.
 Icon = ..\..\bitmaps\aestoque.ico
 KeyPreview = .T.
 WindowType = 1
+WindowState = 2
 AlwaysOnTop = .T.
 BackColor = 192,192,192
 arquivo = 
@@ -92,38 +93,18 @@ SELECT resumoe
 SET  ORDER TO 2
 SELECT item
 SET RELATION TO item.cprod_2 INTO resumoe
+SELE tabcondi
+LOCA FOR tabcondi.Tcocondpag=1
+IF FOUND()
+	Thisform.entcondi.Value=tabcondi.tcocodigo
+ENDIF
+*-
 ThisForm.EntCondi.SetFocus()
-IF CPcodigoempresa="03862926000184" &amp;&amp;jrc
-	IF m.entpedido='000000'
-		m.entpedido=''
-	endif
-	thisform.shpeanodc.Visible=.t.
-	thisform.lblshapeodc.Visible=.t.
-	thisform.shcodfab.Visible=.t.
-	thisform.lblcodfab.Visible=.t.
-	thisform.cmd_verinfoprod.Visible=.t.
-	thisform.lbl_pedidocompra.Visible=.t.
-	thisform.lbl_no_pedidocompra.Visible=.t.
-	thisform.lbl_no_pedidocompra.Caption=m.entpedido
-	SELECT item
-	IF RECCOUNT()&gt;0
-		SCAN
-			SCATTER MEMVAR memo
-			m.ean_localizado=thisform.locprod(ALLTRIM(item.ean,item.cprod))
-			m.pcomp_localizado=thisform.ajusta_itens_odc(ALLTRIM(item.ean,item.cprod))
-			SELECT ITEM
-			=loopgrav(.f.)
-		endscan
-	ENDIF
-	SELECT ITEM
-	GO TOP
-	THISFORM.tabela.Refresh()
-
-	SELECT Produto1
-	SET ORDER TO 1
-	SELECT produto
-	SET RELATION TO CPFilialusu+produto.procodigo INTO produto1
-	SET FILTER TO produto1.prosituacao#1
+IF CPCodempresa='34868376000134' &amp;&amp;enfim
+	thisform.cmd_import_prod.Visible=.t.
+ENDIF
+IF thisform.entrada_nota_info_produto_xml()
+	thisform.cmd_import_prod.Visible=.t.
 endif
 ENDPROC
 PROCEDURE KeyPress
@@ -137,27 +118,7 @@ SWform::LOAD()
 
 ENDPROC
 PROCEDURE Unload
-SELECT produto
-SET RELATION TO
-SET FILTER TO
 RETURN ThisForm.xml_nota
-ENDPROC
-PROCEDURE ajusta_itens_odc
-PARAMETERS m.ean_param,m.cprod
-m.ean_localizado=thisform.locprod(m.ean_param,m.cprod)
-if m.ean_localizado=0 .or. EMPTY(m.entpedido)
-	m.pcomp_localizado=0
-ELSE
-	SELECT pedido2
-	SET ORDER TO 1
-	SEEK m.entpedido+produto.procodigo+produto.prodigito
-	IF FOUND()
-		m.pcomp_localizado=1
-	ELSE
-		m.pcomp_localizado=2
-	ENDIF
-ENDIF
-RETURN m.pcomp_localizado
 ENDPROC
 PROCEDURE ajustando_valores
 SELECT item
@@ -184,24 +145,93 @@ ENDSCAN
 *Thisform.Tabela2.Refresh()
 
 ENDPROC
-PROCEDURE getqtditem_odc
-PARAMETERS m.ean_param,m.cprod
-m.ean_localizado=thisform.locprod(m.ean_param,m.cprod)
-if m.ean_localizado=0 .or. EMPTY(m.entpedido)
-	RETURN -1
-ELSE
-	SELECT pedido2
-	SET ORDER TO 1
-	SEEK m.entpedido+produto.procodigo+produto.prodigito
-	IF FOUND()
-		RETURN pedido2.pedquant
-	ELSE
-		RETURN -1
-	ENDIF
+PROCEDURE cadastro_produto_transf
+m.procodigo=RTRIM(SUBSTR(item.CPROD,1,AT("-",item.CPROD,1)-1))
+m.prodigito=RTRIM(SUBSTR(item.CPROD,AT("-",item.CPROD,1)+1,LEN(item.CPROD)))
+SELECT produto
+SET ORDER TO 1
+SEEK m.procodigo+m.prodigito
+IF FOUND()
+	=MESSAGEBOX("Produto já localizado.",0,CPnomesys2)
+	RETURN .f.
 ENDIF
 
+SELE filial
+SET ORDER TO 1
+SEEK CPfilialusu
+
+m.profilial=CPFilialusu
+m.prolocal=filial.FILLOCALENT
+m.procontrest=1
+m.propro_serv=1
+m.proorigem=1
+
+m.probarra=item.ean
+m.prodescri=item.xprod
+m.proclassfis2=item.NCM
+m.procest=item.cest
+m.prounidade=item.utrib
+m.protribut=item.icms_cst
+m.progrupo= SUBSTR(item.grupo_valor,1,AT("|",item.grupo_valor,1)-1)
+m.proprvenda1=VAL(SUBSTR(item.grupo_valor,AT("|",item.grupo_valor,1)+1,AT("|",item.grupo_valor,2)-AT("|",item.grupo_valor,1)-1))
+m.proprvenda2=VAL(SUBSTR(item.grupo_valor,AT("|",item.grupo_valor,2)+1,LEN(item.grupo_valor)-AT("|",item.grupo_valor,2)-1))
+
+SELECT aliquota
+LOCATE FOR alipercent=item.icms_picms
+IF FOUND()
+	m.proaliquot=aliquota.alicodigo
+endif
+
+IF m.protribut='00'
+	m.procfop='102'
+ELSE
+	m.procfop='405'
+ENDIF
+
+SELECT produto
+=loopgrav(.t.)
+
+SELECT PRODUTO1
+=loopgrav(.t.)
+				
+SELECT Prolocal1
+=loopgrav(.t.)
+				
+SELECT prodcfop
+m.prooperacao='01'
+=loopgrav(.t.)
+							
+m.prooperacao='03'
+=loopgrav(.t.)
+
+m.ean_localizado=0
+SELECT produto
+SET ORDER TO barra
+SEEK ALLTRIM(item.ean)
+IF FOUND()
+	m.ean_localizado=1
+ENDIF
+m.ean_localizado=thisform.locprod(item.ean,item.cprod)
+
+SELECT item
+replace ean_localizado WITH m.ean_localizado
+thisform.tabela.Refresh()
+ENDPROC
+PROCEDURE entrada_nota_info_produto_xml
+m.retorno=.f.
+IF TYPE("configae.entrada_nota_info_produto_xml")="N"
+	IF configae.entrada_nota_info_produto_xml=1
+		m.retorno=.t.
+	ENDIF
+ELSE
+	IF CPCodigoempresa$'10328162000107*20967737000195*23162973000122*04129972000131' &amp;&amp;mercantil/keila/LUZ
+		m.retorno=.t.
+	endif
+ENDIF
+RETURN m.retorno
 ENDPROC
 PROCEDURE importar_cte
+PRIVATE m.cfop
 m.tpAmb=SUBSTR(cRedist,AT('&lt;tpAmb&gt;',cRedist)+LEN('&lt;tpAmb&gt;'),AT('&lt;/tpAmb&gt;',cRedist)-AT('&lt;tpAmb&gt;',cRedist)-LEN('&lt;/tpAmb&gt;')+1)
 m.chave=''
 m.tpAmb='1' &amp;&amp;&amp; Retirar depois dos testes
@@ -225,6 +255,7 @@ m.demi=CTOD(m.dhEmi)
 m.ide=SUBSTR(cRedist,AT('&lt;ide&gt;',cRedist)+LEN('&lt;ide&gt;'),AT('&lt;/ide&gt;',cRedist)-AT('&lt;ide&gt;',cRedist)-LEN('&lt;/ide&gt;')+1)
 m.toma=SUBSTR(ide,AT('&lt;toma&gt;',ide)+LEN('&lt;toma&gt;'),AT('&lt;/toma&gt;',ide)-AT('&lt;toma&gt;',ide)-LEN('&lt;/toma&gt;')+1)
 m.tomador=''
+*SET STEP ON
 DO CASE
 	CASE m.toma='0'
 		m.tomador=SUBSTR(cRedist,AT('&lt;rem&gt;',cRedist)+LEN('&lt;rem&gt;'),AT('&lt;/rem&gt;',cRedist)-AT('&lt;rem&gt;',cRedist)-LEN('&lt;/rem&gt;')+1)
@@ -316,6 +347,18 @@ IF .NOT. EMPTY(m.emit)
 		m.ide=SUBSTR(cRedist,AT('&lt;ide&gt;',cRedist)+LEN('&lt;ide&gt;'),AT('&lt;/ide&gt;',cRedist)-AT('&lt;ide&gt;',cRedist)-LEN('&lt;/ide&gt;')+1)
 		m.nnf=SUBSTR(m.ide,AT('&lt;nCT&gt;',m.ide)+LEN('&lt;nCT&gt;'),AT('&lt;/nCT&gt;',m.ide)-AT('&lt;nCT&gt;',m.ide)-LEN('&lt;/nCT&gt;')+1)
 		m.serie=SUBSTR(m.ide,AT('&lt;serie&gt;',m.ide)+LEN('&lt;serie&gt;'),AT('&lt;/serie&gt;',m.ide)-AT('&lt;serie&gt;',m.ide)-LEN('&lt;/serie&gt;')+1)
+		*-
+		m.rem=SUBSTR(cRedist,AT('&lt;rem&gt;',cRedist)+LEN('&lt;rem&gt;'),AT('&lt;/rem&gt;',cRedist)-AT('&lt;rem&gt;',cRedist)-LEN('&lt;/rem&gt;')+1)
+		*-
+		m.cmun=SUBSTR(rem,AT('&lt;cMun&gt;',rem)+LEN('&lt;cMun&gt;'),AT('&lt;/cMun&gt;',rem)-AT('&lt;cMun&gt;',rem)-LEN('&lt;/cMun&gt;')+1)
+		m.cmun_x=SUBSTR(ide,AT('&lt;cMunIni&gt;',ide)+LEN('&lt;cMunIni&gt;'),AT('&lt;/cMunIni&gt;',ide)-AT('&lt;cMunIni&gt;',ide)-LEN('&lt;/cMunIni&gt;')+1)
+		Thisform.entcod_mun_orig.Value=m.cmun_x
+		*-
+		m.dest=SUBSTR(cRedist,AT('&lt;dest&gt;',cRedist)+LEN('&lt;dest&gt;'),AT('&lt;/dest&gt;',cRedist)-AT('&lt;dest&gt;',cRedist)-LEN('&lt;/dest&gt;')+1)
+		m.cmun=SUBSTR(dest,AT('&lt;cMun&gt;',dest)+LEN('&lt;cMun&gt;'),AT('&lt;/cMun&gt;',dest)-AT('&lt;cMun&gt;',dest)-LEN('&lt;/cMun&gt;')+1)
+		m.cmun_x=SUBSTR(ide,AT('&lt;cMunFim&gt;',ide)+LEN('&lt;cMunFim&gt;'),AT('&lt;/cMunFim&gt;',ide)-AT('&lt;cMunFim&gt;',ide)-LEN('&lt;/cMunFim&gt;')+1)
+		Thisform.entcod_mun_dest.Value=m.cmun_x
+		*-
 		ThisForm.entchave_nfe.Value=m.chave
 		ThisForm.EntdataEmi.Value=m.demi
 		ThisForm.entdataEnt.Value=DATE()
@@ -430,11 +473,30 @@ IF .NOT. EMPTY(m.emit)
 ENDIF
 
 ENDPROC
+PROCEDURE importar_fatura
+SELECT resumo_fatura
+DELETE ALL
+m.qtdocorrencia=OCCURS('&lt;dup&gt;',cRedist)
+FOR m.contaocorrencia=1 TO m.qtdocorrencia STEP 1
+	m.detfatura=SUBSTR(cRedist,AT('&lt;dup',cRedist,m.contaocorrencia)+LEN('&lt;dup')+1,AT('&lt;/dup&gt;',cRedist,m.contaocorrencia)-AT('&lt;dup',cRedist,m.contaocorrencia)-LEN('&lt;/dup&gt;')+1)
+	m.nDup=SUBSTR(m.detfatura,AT('&lt;nDup&gt;',m.detfatura)+LEN('&lt;nDup&gt;'),AT('&lt;/nDup&gt;',m.detfatura)-AT('&lt;nDup&gt;',m.detfatura)-LEN('&lt;/nDup&gt;')+1)
+	m.dVenc=SUBSTR(m.detfatura,AT('&lt;dVenc&gt;',m.detfatura)+LEN('&lt;dVenc&gt;'),AT('&lt;/dVenc&gt;',m.detfatura)-AT('&lt;dVenc&gt;',m.detfatura)-LEN('&lt;/dVenc&gt;')+1)
+	m.dVenc=(SUBSTR(m.dVenc,9,2)+'-'+SUBSTR(m.dVenc,6,2)+'-'+SUBSTR(m.dVenc,1,4))
+	m.vDup=VAL(SUBSTR(m.detfatura,AT('&lt;vDup&gt;',m.detfatura)+LEN('&lt;vDup&gt;'),AT('&lt;/vDup&gt;',m.detfatura)-AT('&lt;vDup&gt;',m.detfatura)-LEN('&lt;/vDup&gt;')+1))
+	SELECT resumo_fatura
+	APPEND BLANK
+	GATHER MEMVAR memo
+ENDFOR
+ThisForm.xIPI.Refresh()
+
+ENDPROC
 PROCEDURE importar_itens
+PRIVATE m.cfop
 m.qtdocorrencia=OCCURS('det nItem',cRedist)
 m.xipi=0
 FOR m.contaocorrencia=1 TO m.qtdocorrencia STEP 1
 	m.detitem=SUBSTR(cRedist,AT('&lt;det nItem',cRedist,m.contaocorrencia)+LEN('&lt;det nItem'),AT('&lt;/det&gt;',cRedist,m.contaocorrencia)-AT('&lt;det nItem',cRedist,m.contaocorrencia)-LEN('&lt;/det&gt;')+1)						
+	m.xml_item=m.detitem
 	m.xProd=SUBSTR(m.detitem,AT('&lt;xProd&gt;',m.detitem)+LEN('&lt;xProd&gt;'),AT('&lt;/xProd&gt;',m.detitem)-AT('&lt;xProd&gt;',m.detitem)-LEN('&lt;/xProd&gt;')+1)
 	m.nnf=SUBSTR(cRedist,AT('&lt;nNF&gt;',cRedist)+LEN('&lt;nNF&gt;'),AT('&lt;/nNF&gt;',cRedist)-AT('&lt;nNF&gt;',cRedist)-LEN('&lt;/nNF&gt;')+1)
 	m.cprod=SUBSTR(m.detitem,AT('&lt;cProd&gt;',m.detitem)+LEN('&lt;cProd&gt;'),AT('&lt;/cProd&gt;',m.detitem)-AT('&lt;cProd&gt;',m.detitem)-LEN('&lt;/cProd&gt;')+1)
@@ -465,18 +527,25 @@ FOR m.contaocorrencia=1 TO m.qtdocorrencia STEP 1
 	m.icms_picms=VAL(SUBSTR(m.icms,AT('&lt;pICMS&gt;',m.icms)+LEN('&lt;pICMS&gt;'),AT('&lt;/pICMS&gt;',m.icms)-AT('&lt;pICMS&gt;',m.icms)-LEN('&lt;/pICMS&gt;')+1))	
 	m.orig=VAL(SUBSTR(m.icms,AT('&lt;orig&gt;',m.icms)+LEN('&lt;orig&gt;'),AT('&lt;/orig&gt;',m.icms)-AT('&lt;orig&gt;',m.icms)-LEN('&lt;/orig&gt;')+1))	
 	m.icms_vicms=VAL(SUBSTR(m.icms,AT('&lt;vICMS&gt;',m.icms)+LEN('&lt;vICMS&gt;'),AT('&lt;/vICMS&gt;',m.icms)-AT('&lt;vICMS&gt;',m.icms)-LEN('&lt;/vICMS&gt;')+1))	
+	m.vicmsdeson=VAL(SUBSTR(m.icms,AT('&lt;vICMSDeson&gt;',m.icms)+LEN('&lt;vICMSDeson&gt;'),AT('&lt;/vICMSDeson&gt;',m.icms)-AT('&lt;vICMSDeson&gt;',m.icms)-LEN('&lt;/vICMSDeson&gt;')+1))	
 	m.classe=''
 	m.icms_pmvast=0
 	m.icms_predbcst=0
 	m.icms_vbcst=VAL(SUBSTR(m.icms,AT('&lt;vBCST&gt;',m.icms)+LEN('&lt;vBCST&gt;'),AT('&lt;/vBCST&gt;',m.icms)-AT('&lt;vBCST&gt;',m.icms)-LEN('&lt;/vBCST&gt;')+1))	
 	m.icms_picmsst=0
+	m.vfcpst=0
 	m.icms_vicmsst=VAL(SUBSTR(m.icms,AT('&lt;vICMSST&gt;',m.icms)+LEN('&lt;vICMSST&gt;'),AT('&lt;/vICMSST&gt;',m.icms)-AT('&lt;vICMSST&gt;',m.icms)-LEN('&lt;/vICMSST&gt;')+1))	
+	m.vfcpst=VAL(SUBSTR(m.icms,AT('&lt;vFCPST&gt;',m.icms)+LEN('&lt;vFCPST&gt;'),AT('&lt;/vFCPST&gt;',m.icms)-AT('&lt;vFCPST&gt;',m.icms)-LEN('&lt;/vFCPST&gt;')+1))
+	m.icms_vicmsst=m.icms_vicmsst+m.vfcpst
 	m.icms_modbcst=''
 	m.icms_predbc=VAL(SUBSTR(m.icms,AT('&lt;pRedBC&gt;',m.icms)+LEN('&lt;pRedBC&gt;'),AT('&lt;/pRedBC&gt;',m.icms)-AT('&lt;pRedBC&gt;',m.icms)-LEN('&lt;/pRedBC&gt;')+1))	
 	m.icms_modbc=SUBSTR(m.icms,AT('&lt;modBC&gt;',m.icms)+LEN('&lt;modBC&gt;'),AT('&lt;/modBC&gt;',m.icms)-AT('&lt;modBC&gt;',m.icms)-LEN('&lt;/modBC&gt;')+1)	
 	m.ipi_pipi=0
 	m.ipi_vipi=0
 	m.ipi_vbc=0
+	m.vseg=0
+	m.voutro=0
+	m.vseg=0
 	m.ipi_cst=''
 	m.vunid=VAL(SUBSTR(m.detitem,AT('&lt;vUnCom&gt;',m.detitem)+LEN('&lt;vUnCom&gt;'),AT('&lt;/vUnCom&gt;',m.detitem)-AT('&lt;vUnCom&gt;',m.detitem)-LEN('&lt;/vUnCom&gt;')+1))	
 	m.qunid=VAL(SUBSTR(m.detitem,AT('&lt;qCom&gt;',m.detitem)+LEN('&lt;qCom&gt;'),AT('&lt;/qCom&gt;',m.detitem)-AT('&lt;qCom&gt;',m.detitem)-LEN('&lt;/qCom&gt;')+1))	
@@ -494,43 +563,31 @@ FOR m.contaocorrencia=1 TO m.qtdocorrencia STEP 1
 	m.confis_vconfins=VAL(SUBSTR(m.pis,AT('&lt;vCOFINS&gt;',m.pis)+LEN('&lt;vCOFINS&gt;'),AT('&lt;/vCOFINS&gt;',m.pis)-AT('&lt;vCOFINS&gt;',m.pis)-LEN('&lt;/vCOFINS&gt;')+1))
 	m.ipi=SUBSTR(m.detitem,AT('&lt;IPI&gt;',m.detitem)+LEN('&lt;IPI&gt;'),AT('&lt;/IPI&gt;',m.detitem)-AT('&lt;IPI&gt;',m.detitem)-LEN('&lt;/IPI&gt;')+1)
 	m.ipi_vIPI=VAL(SUBSTR(m.ipi,AT('&lt;vIPI&gt;',m.ipi)+LEN('&lt;vIPI&gt;'),AT('&lt;/vIPI&gt;',m.ipi)-AT('&lt;vIPI&gt;',m.ipi)-LEN('&lt;/vIPI&gt;')+1))
+	m.voutro=VAL(SUBSTR(m.detitem,AT('&lt;vOutro&gt;',m.detitem)+LEN('&lt;vOutro&gt;'),AT('&lt;/vOutro&gt;',m.detitem)-AT('&lt;vOutro&gt;',m.detitem)-LEN('&lt;/vOutro&gt;')+1))
+	m.vFrete=VAL(SUBSTR(m.detitem,AT('&lt;vFrete&gt;',m.detitem)+LEN('&lt;vFrete&gt;'),AT('&lt;/vFrete&gt;',m.detitem)-AT('&lt;vFrete&gt;',m.detitem)-LEN('&lt;/vFrete&gt;')+1))
+	m.vSeg=VAL(SUBSTR(m.detitem,AT('&lt;vSeg&gt;',m.detitem)+LEN('&lt;vSeg&gt;'),AT('&lt;/vSeg&gt;',m.detitem)-AT('&lt;vSeg&gt;',m.detitem)-LEN('&lt;/vSeg&gt;')+1))
+	m.xPed=SUBSTR(m.detitem,AT('&lt;xPed&gt;',m.detitem)+LEN('&lt;xPed&gt;'),AT('&lt;/xPed&gt;',m.detitem)-AT('&lt;xPed&gt;',m.detitem)-LEN('&lt;/xPed&gt;')+1)
+	m.grupo_valor=SUBSTR(m.detitem,AT('&lt;Grupo_valor&gt;',m.detitem)+LEN('&lt;Grupo_valor&gt;'),AT('&lt;/Grupo_valor&gt;',m.detitem)-AT('&lt;Grupo_valor&gt;',m.detitem)-LEN('&lt;/Grupo_valor&gt;')+1)
 	m.totalvinculado=0
 	m.vprod=m.vprod-m.vDesc
 	m.xipi=m.xipi+m.ipi_vIPI
-	
 	IF m.vuntrib=m.vprod
 		m.vuntrib=m.vuncom &amp;&amp;Para corrigir o problema de unitário tributado diferente do unitario comercial- Ocorreu na Pau de oleo
 	ENDIF	
 	IF m.qtrib=0
 		m.qtrib=m.qcom
 	ENDIF
-	
-	IF CPcodigoempresa="03862926000184" &amp;&amp;jrc
-		IF LEN(ALLTRIM(m.ean))=14 AND (SUBSTR(ALLTRIM(m.ean),1,1))='1'
-			m.ean=SUBSTR(ALLTRIM(m.ean),2,13)
-		ENDIF
-		m.quanti_odc=thisform.getqtditem_odc(m.ean,m.cprod)
-		IF m.quanti_odc#-1
-			IF m.quanti_odc=m.qcom
-				m.vuntrib=m.vUnCom
-				m.qtrib=m.qcom
-			endif
-		endif
-		m.ean_localizado=thisform.locprod(m.ean,m.cprod)
-		m.pcomp_localizado=thisform.ajusta_itens_odc(m.ean,m.cprod)
-		IF EMPTY(m.ean) AND m.ean_localizado=0
-			m.ean_localizado=2
-		endif
-	ELSE
-		m.ean_localizado=0
-		SELECT produto
-		SET ORDER TO barra
-		SEEK ALLTRIM(m.ean)
-		IF FOUND()
-			m.ean_localizado=1
-		ENDIF
-		
-	endif
+	IF RTRIM(m.ean)="SEM GTIN"
+		m.ean=""
+	ENDIF
+	m.ean_localizado=0
+	SELECT produto
+	SET ORDER TO barra
+	SEEK ALLTRIM(m.ean)
+	IF FOUND()
+		m.ean_localizado=1
+	ENDIF
+	m.ean_localizado=thisform.locprod(m.ean,m.cprod)
 	
 	SELECT item
 	APPEND BLANK
@@ -551,9 +608,10 @@ IF m.tpAmb='1'
 		RETURN
 	ENDIF
 ELSE	
-	=MESSAGEBOX('Atenção!!! Não vai ser possível importar os dados desta nota.Foi emitida em ambiente de TESTE.',0+16,CPnomesys2)
-	m.okteste=.f.
-	RETURN
+	IF "&lt;sca_ped&gt;"$cRedist=.F. &amp;&amp;TAG CRIADA APENAS PARA IMPORTAÇÃO DE PEDIDOS
+		=MESSAGEBOX('Atenção!!! Não vai ser possível importar os dados desta nota.Foi emitida em ambiente de TESTE.',0+16,CPnomesys2)
+		m.okteste=.f.
+	endif
 ENDIF	
 m.crt=SUBSTR(cRedist,AT('&lt;CRT&gt;',cRedist)+LEN('&lt;CRT&gt;'),AT('&lt;/CRT&gt;',cRedist)-AT('&lt;CRT&gt;',cRedist)-LEN('&lt;/CRT&gt;')+1)
 m.crt='&lt;CRT&gt;'+m.crt+'&lt;/CRT&gt;'
@@ -570,17 +628,29 @@ IF .NOT. EMPTY(m.dest)
 	m.cnpj=SUBSTR(dest,AT('&lt;CNPJ&gt;',dest)+LEN('&lt;CNPJ&gt;'),AT('&lt;/CNPJ&gt;',dest)-AT('&lt;CNPJ&gt;',dest)-LEN('&lt;/CNPJ&gt;')+1)
 	m.xnome=SUBSTR(dest,AT('&lt;xNome&gt;',dest)+LEN('&lt;xNome&gt;'),AT('&lt;/xNome&gt;',dest)-AT('&lt;xNome&gt;',dest)-LEN('&lt;/xNome&gt;')+1)
 ENDIF	
+
+m.libera_entrada_outros_cnpj=.f.
+IF TYPE("configae.libera_entrada_outros_cnpj")#"U"
+	IF configae.libera_entrada_outros_cnpj=1
+		m.libera_entrada_outros_cnpj=.t.
+	endif
+endif
+
 SELECT filial
 SET ORDER TO 1
 SEEK CPFilialusu
-IF m.cnpj#Eliponto(filial.filcnpj)
+IF m.cnpj#Eliponto(filial.filcnpj) .and. m.libera_entrada_outros_cnpj=.f.
 	=MESSAGEBOX('Atenção!!! Esta NFe não foi emitida para este CNPJ. Destinatário do XML:'+m.cnpj+' '+m.xnome,0+16,CPnomesys2)
-	m.okteste=.f.
-	RETURN
+	******m.okteste=.f.
+	******RETURN
 ENDIF
+
 m.emit=SUBSTR(cRedist,AT('&lt;emit&gt;',cRedist)+LEN('&lt;emit&gt;'),AT('&lt;/emit&gt;',cRedist)-AT('&lt;emit&gt;',cRedist)-LEN('&lt;/emit&gt;')+1)
 IF .NOT. EMPTY(m.emit)
 	m.cnpj=SUBSTR(emit,AT('&lt;CNPJ&gt;',emit)+LEN('&lt;CNPJ&gt;'),AT('&lt;/CNPJ&gt;',emit)-AT('&lt;CNPJ&gt;',emit)-LEN('&lt;/CNPJ&gt;')+1)
+	IF EMPTY(m.cnpj)
+		m.cnpj=SUBSTR(emit,AT('&lt;CPF&gt;',emit)+LEN('&lt;CPF&gt;'),AT('&lt;/CPF&gt;',emit)-AT('&lt;CPF&gt;',emit)-LEN('&lt;/CPF&gt;')+1)
+	ENDIF 	
 	m.ie=SUBSTR(emit,AT('&lt;IE&gt;',emit)+LEN('&lt;IE&gt;'),AT('&lt;/IE&gt;',emit)-AT('&lt;IE&gt;',emit)-LEN('&lt;/IE&gt;')+1)
 	m.xnome=SUBSTR(emit,AT('&lt;xNome&gt;',emit)+LEN('&lt;xNome&gt;'),AT('&lt;/xNome&gt;',emit)-AT('&lt;xNome&gt;',emit)-LEN('&lt;/xNome&gt;')+1)
 	m.xfant_opc=''
@@ -603,6 +673,7 @@ IF .NOT. EMPTY(m.emit)
 			DO FORM ficadcli WITH '',m.emit+m.crt
 		ENDIF
 	ENDIF
+	*SET STEP ON
 	ThisForm.EntFornec.Value=''
 	SELECT cliente
 	SET ORDER TO 5
@@ -612,15 +683,38 @@ IF .NOT. EMPTY(m.emit)
 	ELSE 	
 		m.codigolocalizado=cliente.clicodigo
 		IF cliente.clisituacao&lt;=1
-			ThisForm.EntFornec.Value=cliente.clicodigo
-			ThisForm.Nomefor.Value=cliente.clinome
-			ThisForm.cnPJ.Value=m.cnpj
+*!*				ThisForm.EntFornec.Value=cliente.clicodigo
+*!*				ThisForm.Nomefor.Value=cliente.clinome
+*!*				ThisForm.cnPJ.Value=m.cnpj
+			SELECT cliente
+			SET ORDER TO 5
+			SEEK ALLTRIM(m.cnpj)
+			SCAN WHILE ALLTRIM(m.cnpj)=ALLTRIM(cliente.clicpf_cnpj)
+				m.ok_fornecedor=.t.
+				IF LEFT(CPcodigoempresa,8)$'64453095'  &amp;&amp;COOASAVI
+					IF cliente.clitipo=1 .OR. cliente.clitipo=7
+						m.ok_fornecedor=.F.
+					ENDIF
+				ENDIF
+				IF cliente.clisituacao&lt;=1 .AND. m.ok_fornecedor
+					ThisForm.EntFornec.Value=cliente.clicodigo
+					ThisForm.Nomefor.Value=cliente.clinome
+					ThisForm.cnPJ.Value=m.cnpj
+					EXIT
+				ENDIF
+			ENDSCAN			
 		ELSE
 			SELECT cliente
 			SET ORDER TO 5
 			SEEK ALLTRIM(m.cnpj)
 			SCAN WHILE ALLTRIM(m.cnpj)=ALLTRIM(cliente.clicpf_cnpj)
-				IF cliente.clisituacao&lt;=1
+				m.ok_fornecedor=.t.
+				IF LEFT(CPcodigoempresa,8)$'64453095'  &amp;&amp;COOASAVI
+					IF cliente.clitipo=1 .OR. cliente.clitipo=7
+						m.ok_fornecedor=.F.
+					ENDIF
+				ENDIF
+				IF cliente.clisituacao&lt;=1 .AND. m.ok_fornecedor
 					ThisForm.EntFornec.Value=cliente.clicodigo
 					ThisForm.Nomefor.Value=cliente.clinome
 					ThisForm.cnPJ.Value=m.cnpj
@@ -638,6 +732,8 @@ IF .NOT. EMPTY(m.emit)
 		m.total=SUBSTR(cRedist,AT('&lt;total&gt;',cRedist)+LEN('&lt;total&gt;'),AT('&lt;/total&gt;',cRedist)-AT('&lt;total&gt;',cRedist)-LEN('&lt;/total&gt;')+1)
 		m.vBCST=VAL(SUBSTR(total,AT('&lt;vBCST&gt;',total)+LEN('&lt;vBCST&gt;'),AT('&lt;/vBCST&gt;',total)-AT('&lt;vBCST&gt;',total)-LEN('&lt;/vBCST&gt;')+1))
 		m.vST=VAL(SUBSTR(total,AT('&lt;vST&gt;',total)+LEN('&lt;vST&gt;'),AT('&lt;/vST&gt;',total)-AT('&lt;vST&gt;',total)-LEN('&lt;/vST&gt;')+1))
+		m.vFCPST=VAL(SUBSTR(total,AT('&lt;vFCPST&gt;',total)+LEN('&lt;vFCPST&gt;'),AT('&lt;/vFCPST&gt;',total)-AT('&lt;vFCPST&gt;',total)-LEN('&lt;/vFCPST&gt;')+1))
+		m.vst=m.vst+m.vFCPST
 		m.vNF=VAL(SUBSTR(total,AT('&lt;vNF&gt;',total)+LEN('&lt;vNF&gt;'),AT('&lt;/vNF&gt;',total)-AT('&lt;vNF&gt;',total)-LEN('&lt;/vNF&gt;')+1))
 		m.vFrete=VAL(SUBSTR(total,AT('&lt;vFrete&gt;',total)+LEN('&lt;vFrete&gt;'),AT('&lt;/vFrete&gt;',total)-AT('&lt;vFrete&gt;',total)-LEN('&lt;/vFrete&gt;')+1))
 		m.vSeg=VAL(SUBSTR(total,AT('&lt;vSeg&gt;',total)+LEN('&lt;vSeg&gt;'),AT('&lt;/vSeg&gt;',total)-AT('&lt;vSeg&gt;',total)-LEN('&lt;/vSeg&gt;')+1))
@@ -656,6 +752,10 @@ IF .NOT. EMPTY(m.emit)
 		ThisForm.entnr_nota.Value=Strzero(VAL(RIGHT(m.nnf,6)),6)
 		Thisform.entserie.Value=m.serie
 		ThisForm.entmodelo.Value=24
+		IF VAL(m.serie)=890
+			ThisForm.entmodelo.Value=27
+		ENDIF
+		m.entcod_sit=1
 		AeEntNot.SwPagFra1.Page1.VlrNota.Value=m.vNF
 		AeEntNot.swpagFRA1.page1.vlrTotal.Value=0
 		AeEntNot.swpagFRA1.page1.totalipi.Value=0
@@ -689,6 +789,8 @@ IF .NOT. EMPTY(m.emit)
 			RETURN
 		  ENDIF		
 	    ENDIF
+	    *-
+	    Thisform.importar_fatura()
 		*-
 		SELECT item
 		DELETE ALL
@@ -709,14 +811,16 @@ else
 	m.result=thisform.locprodean(m.ean)
 endif
 IF m.result=0 .and. NOT EMPTY(m.fabric)
-	SELECT produto_fornecedor
-	SET ORDER TO proefornec
-	SEEK thisform.entfornec.value+m.fabric
-	IF FOUND()
-		SELECT produto
-		SET ORDER TO 1
-		SEEK produto_fornecedor.pf_procodigo+produto_fornecedor.pf_prodigito
-		m.result=3
+	IF USED("produto_fornecedor")
+		SELECT produto_fornecedor
+		SET ORDER TO proefornec
+		SEEK thisform.entfornec.value+m.fabric
+		IF FOUND()
+			SELECT produto
+			SET ORDER TO 1
+			SEEK produto_fornecedor.pf_procodigo+produto_fornecedor.pf_prodigito
+			m.result=3
+		ENDIF
 	endif
 ENDIF
 RETURN m.result
@@ -733,9 +837,13 @@ IF NOT FOUND()
 	SET ORDER TO barra2
 	SEEK ALLTRIM(m.ean)
 	IF NOT FOUND()
-		SET ORDER TO barra3
-		SEEK ALLTRIM(m.ean)
-		IF NOT FOUND()
+		IF INDEXEXISTS("produto","barra3")
+			SET ORDER TO barra3
+			SEEK ALLTRIM(m.ean)
+			IF NOT FOUND()
+				m.ean_localizado=0
+			ENDIF
+		ELSE
 			m.ean_localizado=0
 		endif
 	endif
@@ -750,19 +858,11 @@ ENDIF
 IF item.totalvinculado&gt;0
 	*SET STEP ON
 ENDIF
-IF CPcodigoempresa="03862926000184" &amp;&amp;jrc
-	IF item.totalvinculado&gt;0 .and. item.vprod&lt;item.totalvinculado_conf
-		IF UPPER(ALLTRIM(m.objeto))$'VPROD*XPROD'
-			RETURN ThisForm.shperro.BackColor
-		ENDIF
+IF item.totalvinculado&gt;0 .and. item.vprod_conf&lt;item.totalvinculado_conf
+	IF UPPER(ALLTRIM(m.objeto))$'VPROD*XPROD'
+		RETURN ThisForm.shperro.BackColor
 	ENDIF
-ELSE
-	IF item.totalvinculado&gt;0 .and. item.vprod_conf&lt;item.totalvinculado_conf
-		IF UPPER(ALLTRIM(m.objeto))$'VPROD*XPROD'
-			RETURN ThisForm.shperro.BackColor
-		ENDIF
-	ENDIF
-endif
+ENDIF
 IF item.totalvinculado&gt;0 .and. item.icms_vICMSST_conf#item.icmstpro_conf
 	IF UPPER(ALLTRIM(m.objeto))$UPPER('XPROD*Icms_vICMSST')
 		RETURN ThisForm.shperro.BackColor
@@ -779,16 +879,8 @@ ENDIF
 IF item.totalvinculado&gt;0 .and. item.totalvinculado&gt;=(item.vprod-item.vdesc)
 	RETURN ThisForm.shpvinculado_total.BackColor
 ENDIF
-IF m.objeto='nloc' .and. thisform.shpeanodc.Visible=.t.
-	IF item.pcomp_localizado=2
-		RETURN ThisForm.shpeanodc.BackColor
-	ENDIF
-endif
 IF item.ean_localizado=1
 	RETURN ThisForm.SHPEan.BackColor
-ENDIF
-IF item.ean_localizado=2
-	RETURN ThisForm.shpeannl.BackColor
 ENDIF
 IF item.ean_localizado=3
 	RETURN ThisForm.shcodfab.BackColor
@@ -808,10 +900,11 @@ xml_nota
 *importar_itens 
 *retornarcor 
 *ajustando_valores 
-*locprod 
-*ajusta_itens_odc 
+*importar_fatura 
 *locprodean 
-*getqtditem_odc 
+*locprod 
+*cadastro_produto_transf 
+*entrada_nota_info_produto_xml 
 </reserved3>
 		<reserved4/>
 		<reserved5/>
@@ -823,7 +916,7 @@ xml_nota
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3SU0ZKI1M</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swcombut</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>commandbutton</baseclass>
@@ -865,7 +958,7 @@ ENDPROC
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3TT0ZB6PK</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1380285175</timestamp>
 		<class>swtexbox</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>textbox</baseclass>
@@ -945,7 +1038,7 @@ Name = "lblDesconto"
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3TU0JZAIW</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swtexbox</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>textbox</baseclass>
@@ -1005,102 +1098,6 @@ ENDPROC
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3V80NDIKN</uniqueid>
-		<timestamp>1125996244</timestamp>
-		<class>label</class>
-		<classloc/>
-		<baseclass>label</baseclass>
-		<objname>Label5</objname>
-		<parent>AEENTNOT_XML</parent>
-		<properties>FontBold = .T.
-FontSize = 8
-Alignment = 1
-Caption = "IPI"
-Height = 15
-Left = 583
-Top = 122
-Visible = .T.
-Width = 65
-TabIndex = 30
-BackColor = 192,192,192
-ZOrderSet = 4
-Name = "Label5"
-</properties>
-		<protected/>
-		<methods/>
-		<objcode/>
-		<ole/>
-		<ole2/>
-		<reserved1/>
-		<reserved2/>
-		<reserved3/>
-		<reserved4/>
-		<reserved5/>
-		<reserved6/>
-		<reserved7/>
-		<reserved8/>
-		<user/>
-	</record>
-	<record>
-		<platform>WINDOWS</platform>
-		<uniqueid>_3V80NDIKO</uniqueid>
-		<timestamp>1278888690</timestamp>
-		<class>swtexbox</class>
-		<classloc>..\..\library\swbase.vcx</classloc>
-		<baseclass>textbox</baseclass>
-		<objname>xipi</objname>
-		<parent>AEENTNOT_XML</parent>
-		<properties>FontBold = .F.
-FontSize = 8
-Alignment = 1
-Value = 0
-ControlSource = "m.xipi"
-Enabled = .F.
-Format = "K"
-Height = 24
-Left = 538
-SpecialEffect = 0
-TabIndex = 31
-Top = 136
-Visible = .T.
-Width = 110
-Style = 0
-DisabledBackColor = 227,227,227
-ZOrderSet = 5
-Name = "xipi"
-</properties>
-		<protected/>
-		<methods>PROCEDURE GotFocus
-This.Tag=STR(This.Value,12,2)
-ENDPROC
-PROCEDURE Init
-SwTexBox::Init()
-This.InputMask=ALLTRIM(CPpicvalor)
-ENDPROC
-PROCEDURE LostFocus
-This.Tag=STR(This.Value,12,2)
-*IF ThisForm.especie_tela=1 .OR. ThisForm.especie_tela=3
-*   This.Parent.Novo.Setfocus()
-*ENDIF
-
-
-ENDPROC
-</methods>
-		<objcode/>
-		<ole/>
-		<ole2/>
-		<reserved1/>
-		<reserved2/>
-		<reserved3/>
-		<reserved4/>
-		<reserved5/>
-		<reserved6/>
-		<reserved7/>
-		<reserved8/>
-		<user/>
-	</record>
-	<record>
-		<platform>WINDOWS</platform>
 		<uniqueid>_3SU0ZKI1M</uniqueid>
 		<timestamp>1125996244</timestamp>
 		<class>label</class>
@@ -1140,7 +1137,7 @@ Name = "lblacrescimo"
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3SU0ZKI1N</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swtexbox</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>textbox</baseclass>
@@ -1208,141 +1205,26 @@ ENDPROC
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_4ZO0PJ351</uniqueid>
-		<timestamp>1261726866</timestamp>
+		<uniqueid>_3V80NDIKN</uniqueid>
+		<timestamp>1125996244</timestamp>
 		<class>label</class>
 		<classloc/>
 		<baseclass>label</baseclass>
-		<objname>lblshapeodc</objname>
-		<parent>AEENTNOT_XML</parent>
-		<properties>AutoSize = .F.
-FontBold = .T.
-FontSize = 8
-Alignment = 0
-Caption = "Não encontrado na ODC"
-Height = 16
-Left = 869
-Top = 364
-Visible = .F.
-Width = 137
-TabIndex = 39
-BackColor = 192,192,192
-ZOrderSet = 8
-Name = "lblshapeodc"
-</properties>
-		<protected/>
-		<methods/>
-		<objcode/>
-		<ole/>
-		<ole2/>
-		<reserved1/>
-		<reserved2/>
-		<reserved3/>
-		<reserved4/>
-		<reserved5/>
-		<reserved6/>
-		<reserved7/>
-		<reserved8/>
-		<user/>
-	</record>
-	<record>
-		<platform>WINDOWS</platform>
-		<uniqueid>_3SU0ZKI1M</uniqueid>
-		<timestamp>1261726866</timestamp>
-		<class>label</class>
-		<classloc/>
-		<baseclass>label</baseclass>
-		<objname>Label9</objname>
-		<parent>AEENTNOT_XML</parent>
-		<properties>FontBold = .T.
-FontSize = 8
-Alignment = 0
-Caption = "Sem codigo EAN info. na nota"
-Height = 15
-Left = 674
-Top = 364
-Visible = .T.
-Width = 164
-TabIndex = 39
-BackColor = 192,192,192
-ZOrderSet = 8
-Name = "Label9"
-</properties>
-		<protected/>
-		<methods/>
-		<objcode/>
-		<ole/>
-		<ole2/>
-		<reserved1/>
-		<reserved2/>
-		<reserved3/>
-		<reserved4/>
-		<reserved5/>
-		<reserved6/>
-		<reserved7/>
-		<reserved8/>
-		<user/>
-	</record>
-	<record>
-		<platform>WINDOWS</platform>
-		<uniqueid>_3TU0JZAJF</uniqueid>
-		<timestamp>1122720838</timestamp>
-		<class>label</class>
-		<classloc/>
-		<baseclass>label</baseclass>
-		<objname>Label7</objname>
-		<parent>AEENTNOT_XML</parent>
-		<properties>FontBold = .T.
-FontSize = 8
-Alignment = 0
-Caption = "Chave NFE"
-Height = 15
-Left = 272
-Top = 32
-Visible = .T.
-Width = 60
-TabIndex = 10
-BackColor = 192,192,192
-ZOrderSet = 8
-Name = "Label7"
-</properties>
-		<protected/>
-		<methods/>
-		<objcode/>
-		<ole/>
-		<ole2/>
-		<reserved1/>
-		<reserved2/>
-		<reserved3/>
-		<reserved4/>
-		<reserved5/>
-		<reserved6/>
-		<reserved7/>
-		<reserved8/>
-		<user/>
-	</record>
-	<record>
-		<platform>WINDOWS</platform>
-		<uniqueid>_3SU0ZKI1M</uniqueid>
-		<timestamp>1122720838</timestamp>
-		<class>label</class>
-		<classloc/>
-		<baseclass>label</baseclass>
-		<objname>Label6</objname>
+		<objname>Label5</objname>
 		<parent>AEENTNOT_XML</parent>
 		<properties>FontBold = .T.
 FontSize = 8
 Alignment = 1
-Caption = "Base ST"
+Caption = "IPI"
 Height = 15
-Left = 70
-Top = 119
+Left = 583
+Top = 122
 Visible = .T.
-Width = 50
-TabIndex = 24
+Width = 65
+TabIndex = 30
 BackColor = 192,192,192
-ZOrderSet = 8
-Name = "Label6"
+ZOrderSet = 4
+Name = "Label5"
 </properties>
 		<protected/>
 		<methods/>
@@ -1361,26 +1243,84 @@ Name = "Label6"
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3TV0Y7OOK</uniqueid>
-		<timestamp>1123124596</timestamp>
+		<uniqueid>_3V80NDIKO</uniqueid>
+		<timestamp>1354980932</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>xipi</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .F.
+FontSize = 8
+Alignment = 1
+Value = 0
+ControlSource = "m.xipi"
+Enabled = .F.
+Format = "K"
+Height = 24
+Left = 538
+SpecialEffect = 0
+TabIndex = 31
+Top = 136
+Visible = .T.
+Width = 110
+Style = 0
+DisabledBackColor = 227,227,227
+ZOrderSet = 5
+Name = "xipi"
+</properties>
+		<protected/>
+		<methods>PROCEDURE GotFocus
+This.Tag=STR(This.Value,12,2)
+ENDPROC
+PROCEDURE Init
+SwTexBox::Init()
+This.InputMask=ALLTRIM(CPpicvalor)
+ENDPROC
+PROCEDURE LostFocus
+This.Tag=STR(This.Value,12,2)
+*IF ThisForm.especie_tela=1 .OR. ThisForm.especie_tela=3
+*   This.Parent.Novo.Setfocus()
+*ENDIF
+
+
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_4EY0NR0LB</uniqueid>
+		<timestamp>1331189917</timestamp>
 		<class>label</class>
 		<classloc/>
 		<baseclass>label</baseclass>
-		<objname>Label4</objname>
+		<objname>Label8</objname>
 		<parent>AEENTNOT_XML</parent>
 		<properties>FontBold = .T.
 FontSize = 8
 Alignment = 0
-Caption = "Item com erro nos valores"
+Caption = "Localizado código EAN"
 Height = 15
-Left = 240
-Top = 519
+Left = 364
+Top = 366
 Visible = .T.
-Width = 156
+Width = 152
 TabIndex = 39
 BackColor = 192,192,192
 ZOrderSet = 8
-Name = "Label4"
+Name = "Label8"
 </properties>
 		<protected/>
 		<methods/>
@@ -1399,26 +1339,26 @@ Name = "Label4"
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3TV0OD984</uniqueid>
-		<timestamp>1122729783</timestamp>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122599823</timestamp>
 		<class>label</class>
 		<classloc/>
 		<baseclass>label</baseclass>
-		<objname>Label3</objname>
+		<objname>Label2</objname>
 		<parent>AEENTNOT_XML</parent>
 		<properties>FontBold = .T.
 FontSize = 8
 Alignment = 0
-Caption = "Item vinculado parcial"
+Caption = "Item vinculado total"
 Height = 15
 Left = 57
-Top = 541
+Top = 519
 Visible = .T.
-Width = 135
-TabIndex = 40
+Width = 119
+TabIndex = 39
 BackColor = 192,192,192
 ZOrderSet = 8
-Name = "Label3"
+Name = "Label2"
 </properties>
 		<protected/>
 		<methods/>
@@ -1475,60 +1415,8 @@ Name = "Label1"
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3TU0JZAJ0</uniqueid>
-		<timestamp>1278888690</timestamp>
-		<class>swtexbox</class>
-		<classloc>..\..\library\swbase.vcx</classloc>
-		<baseclass>textbox</baseclass>
-		<objname>entbasest</objname>
-		<parent>AEENTNOT_XML</parent>
-		<properties>FontBold = .F.
-FontSize = 8
-Alignment = 1
-Value = (0)
-ControlSource = "m.entbasest"
-Enabled = .F.
-Format = "K"
-Height = 24
-InputMask = ""
-Left = 12
-SpecialEffect = 0
-TabIndex = 25
-Top = 136
-Visible = .T.
-Width = 108
-Style = 0
-DisabledBackColor = 227,227,227
-ZOrderSet = 9
-Name = "entbasest"
-</properties>
-		<protected/>
-		<methods>PROCEDURE Init
-SwTexBox::Init()
-This.InputMask=ALLTRIM(CPpicvalor)
-ENDPROC
-PROCEDURE LostFocus
-
-
-ENDPROC
-</methods>
-		<objcode/>
-		<ole/>
-		<ole2/>
-		<reserved1/>
-		<reserved2/>
-		<reserved3/>
-		<reserved4/>
-		<reserved5/>
-		<reserved6/>
-		<reserved7/>
-		<reserved8/>
-		<user/>
-	</record>
-	<record>
-		<platform>WINDOWS</platform>
 		<uniqueid>_3TU0JZAJ2</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swtexbox</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>textbox</baseclass>
@@ -1588,26 +1476,78 @@ ENDPROC
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3SU0ZKI1M</uniqueid>
-		<timestamp>1122599823</timestamp>
+		<uniqueid>_3TU0JZAJ0</uniqueid>
+		<timestamp>1354980932</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>entbasest</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .F.
+FontSize = 8
+Alignment = 1
+Value = (0)
+ControlSource = "m.entbasest"
+Enabled = .F.
+Format = "K"
+Height = 24
+InputMask = ""
+Left = 12
+SpecialEffect = 0
+TabIndex = 25
+Top = 136
+Visible = .T.
+Width = 108
+Style = 0
+DisabledBackColor = 227,227,227
+ZOrderSet = 9
+Name = "entbasest"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Init
+SwTexBox::Init()
+This.InputMask=ALLTRIM(CPpicvalor)
+ENDPROC
+PROCEDURE LostFocus
+
+
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0OD984</uniqueid>
+		<timestamp>1122729783</timestamp>
 		<class>label</class>
 		<classloc/>
 		<baseclass>label</baseclass>
-		<objname>Label2</objname>
+		<objname>Label3</objname>
 		<parent>AEENTNOT_XML</parent>
 		<properties>FontBold = .T.
 FontSize = 8
 Alignment = 0
-Caption = "Item vinculado total"
+Caption = "Item vinculado parcial"
 Height = 15
 Left = 57
-Top = 519
+Top = 541
 Visible = .T.
-Width = 119
-TabIndex = 39
+Width = 135
+TabIndex = 40
 BackColor = 192,192,192
 ZOrderSet = 8
-Name = "Label2"
+Name = "Label3"
 </properties>
 		<protected/>
 		<methods/>
@@ -1626,8 +1566,91 @@ Name = "Label2"
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
+		<uniqueid>_3TV0Y7OOK</uniqueid>
+		<timestamp>1123124596</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>Label4</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .T.
+FontSize = 8
+Alignment = 0
+Caption = "Item com erro nos valores"
+Height = 15
+Left = 240
+Top = 519
+Visible = .T.
+Width = 156
+TabIndex = 39
+BackColor = 192,192,192
+ZOrderSet = 8
+Name = "Label4"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TT0ZB6PL</uniqueid>
+		<timestamp>1354980932</timestamp>
+		<class>swcombut</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>commandbutton</baseclass>
+		<objname>cmdcarregarXML</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>Top = 4
+Left = 17
+Height = 28
+Width = 240
+FontBold = .F.
+FontSize = 8
+Picture = ..\..\..\siswin2
+Caption = "Buscar  XML"
+Enabled = .T.
+TabIndex = 2
+ToolTipText = "Busca XML armazenado no banco de dados"
+ZOrderSet = 14
+Name = "cmdcarregarXML"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Click
+m.xml=''
+DO FORM aeentnot_xml_carregar_xml TO m.xml
+IF .NOT. EMPTY(m.xml)
+	ThisForm.cmdlocalizarxml.click(m.xml)
+ENDIF
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
 		<uniqueid>_3SU0ZKI1M</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swcombut</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>commandbutton</baseclass>
@@ -1718,36 +1741,29 @@ ENDPROC
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3TT0ZB6PL</uniqueid>
-		<timestamp>1278888690</timestamp>
-		<class>swcombut</class>
-		<classloc>..\..\library\swbase.vcx</classloc>
-		<baseclass>commandbutton</baseclass>
-		<objname>cmdcarregarXML</objname>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122720838</timestamp>
+		<class>label</class>
+		<classloc/>
+		<baseclass>label</baseclass>
+		<objname>Label6</objname>
 		<parent>AEENTNOT_XML</parent>
-		<properties>Top = 4
-Left = 17
-Height = 28
-Width = 240
-FontBold = .F.
+		<properties>FontBold = .T.
 FontSize = 8
-Picture = ..\..\..\siswin2
-Caption = "Buscar  XML"
-Enabled = .T.
-TabIndex = 2
-ToolTipText = "Busca XML armazenado no banco de dados"
-ZOrderSet = 14
-Name = "cmdcarregarXML"
+Alignment = 1
+Caption = "Base ST"
+Height = 15
+Left = 70
+Top = 119
+Visible = .T.
+Width = 50
+TabIndex = 24
+BackColor = 192,192,192
+ZOrderSet = 8
+Name = "Label6"
 </properties>
 		<protected/>
-		<methods>PROCEDURE Click
-m.xml=''
-DO FORM aeentnot_xml_carregar_xml TO m.xml
-IF .NOT. EMPTY(m.xml)
-	ThisForm.cmdlocalizarxml.click(m.xml)
-ENDIF
-ENDPROC
-</methods>
+		<methods/>
 		<objcode/>
 		<ole/>
 		<ole2/>
@@ -1800,25 +1816,26 @@ Name = "Swlabel3"
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<uniqueid>_3TU0JZAJF</uniqueid>
 		<timestamp>1122720838</timestamp>
-		<class>swlabel</class>
-		<classloc>..\..\library\swbase.vcx</classloc>
+		<class>label</class>
+		<classloc/>
 		<baseclass>label</baseclass>
-		<objname>lblCliente</objname>
+		<objname>Label7</objname>
 		<parent>AEENTNOT_XML</parent>
-		<properties>FontSize = 8
-WordWrap = .T.
-BorderStyle = 0
-Caption = "Fornecedor"
+		<properties>FontBold = .T.
+FontSize = 8
+Alignment = 0
+Caption = "Chave NFE"
 Height = 15
-Left = 12
-Top = 76
+Left = 272
+Top = 32
 Visible = .T.
-Width = 70
-TabIndex = 15
-ZOrderSet = 19
-Name = "lblCliente"
+Width = 60
+TabIndex = 10
+BackColor = 192,192,192
+ZOrderSet = 8
+Name = "Label7"
 </properties>
 		<protected/>
 		<methods/>
@@ -1875,7 +1892,7 @@ Name = "Swlabel5"
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3TV0OMMSB</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swtexbox</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>textbox</baseclass>
@@ -1945,7 +1962,7 @@ ENDPROC
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3SU0ZKI1M</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swtexbox</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>textbox</baseclass>
@@ -2021,7 +2038,7 @@ SET ORDER TO 1
 SEEK m.entfornec
 m.nomefornec=cliente.clinome
 SELE tabcondi
-LOCA FOR tabcondi.tcodebito=2
+LOCA FOR tabcondi.tcodebito=1
 IF FOUND()
 	   m.entcondi=tabcondi.tcocodigo
 ENDIF
@@ -2047,7 +2064,7 @@ ENDPROC
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3SU0ZKI1N</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swtexbox</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>textbox</baseclass>
@@ -2180,28 +2197,73 @@ Name = "EntDataEnt"
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3SU0ZKI1M</uniqueid>
-		<timestamp>1225298674</timestamp>
+		<uniqueid>_3TN12FZSK</uniqueid>
+		<timestamp>1122720838</timestamp>
 		<class>swlabel</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>label</baseclass>
-		<objname>Swlabel1</objname>
+		<objname>Swlabel6</objname>
 		<parent>AEENTNOT_XML</parent>
 		<properties>FontSize = 8
 WordWrap = .T.
-Alignment = 0
-Caption = "Série"
+Alignment = 2
+Caption = "------------ Vinculação do Item ------------"
 Height = 15
-Left = 100
-Top = 32
+Left = 12
+Top = 394
 Visible = .T.
-Width = 43
-TabIndex = 6
+Width = 984
+TabIndex = 36
 ZOrderSet = 25
-Name = "Swlabel1"
+Name = "Swlabel6"
 </properties>
 		<protected/>
 		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3TU0JI8QW</uniqueid>
+		<timestamp>1354980932</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>EntFornec</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Alignment = 2
+Value = (Entranota1.EntFornec)
+ControlSource = "m.entfornec"
+Enabled = .F.
+Format = "K"
+Height = 24
+InputMask = ""
+Left = 12
+TabIndex = 16
+Top = 93
+Visible = .T.
+Width = 84
+DisabledBackColor = 227,227,227
+ZOrderSet = 26
+Name = "EntFornec"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Init
+SwTexBox::Init()
+This.InputMask=REPLI("9",LEN(Entranota1.EntFornec))
+ENDPROC
+</methods>
 		<objcode/>
 		<ole/>
 		<ole2/>
@@ -2254,108 +2316,31 @@ Name = "lblNumero"
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3TN12FZSK</uniqueid>
-		<timestamp>1122720838</timestamp>
-		<class>swlabel</class>
-		<classloc>..\..\library\swbase.vcx</classloc>
-		<baseclass>label</baseclass>
-		<objname>Swlabel6</objname>
-		<parent>AEENTNOT_XML</parent>
-		<properties>FontSize = 8
-WordWrap = .T.
-Alignment = 2
-Caption = "------------ Vinculação do Item ------------"
-Height = 15
-Left = 12
-Top = 394
-Visible = .T.
-Width = 984
-TabIndex = 36
-ZOrderSet = 25
-Name = "Swlabel6"
-</properties>
-		<protected/>
-		<methods/>
-		<objcode/>
-		<ole/>
-		<ole2/>
-		<reserved1/>
-		<reserved2/>
-		<reserved3/>
-		<reserved4/>
-		<reserved5/>
-		<reserved6/>
-		<reserved7/>
-		<reserved8/>
-		<user/>
-	</record>
-	<record>
-		<platform>WINDOWS</platform>
-		<uniqueid>_3TV0OMMSC</uniqueid>
-		<timestamp>1122720838</timestamp>
-		<class>swlabel</class>
-		<classloc>..\..\library\swbase.vcx</classloc>
-		<baseclass>label</baseclass>
-		<objname>lblCondPag</objname>
-		<parent>AEENTNOT_XML</parent>
-		<properties>FontSize = 8
-WordWrap = .T.
-Caption = "Condição Pgto."
-Height = 15
-Left = 686
-Top = 32
-Width = 90
-TabIndex = 12
-ZOrderSet = 27
-Name = "lblCondPag"
-</properties>
-		<protected/>
-		<methods/>
-		<objcode/>
-		<ole/>
-		<ole2/>
-		<reserved1/>
-		<reserved2/>
-		<reserved3/>
-		<reserved4/>
-		<reserved5/>
-		<reserved6/>
-		<reserved7/>
-		<reserved8/>
-		<user/>
-	</record>
-	<record>
-		<platform>WINDOWS</platform>
-		<uniqueid>_3TU0JI8QW</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<uniqueid>_3TU0JI8QX</uniqueid>
+		<timestamp>1354977288</timestamp>
 		<class>swtexbox</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>textbox</baseclass>
-		<objname>EntFornec</objname>
+		<objname>cnpj</objname>
 		<parent>AEENTNOT_XML</parent>
-		<properties>FontSize = 8
-Alignment = 2
-Value = (Entranota1.EntFornec)
-ControlSource = "m.entfornec"
+		<properties>OLEDragMode = 0
+FontSize = 8
+Value = (Forneced.ForRazao)
 Enabled = .F.
-Format = "K"
+Format = ""
 Height = 24
-InputMask = ""
-Left = 12
-TabIndex = 16
+Left = 378
+TabIndex = 19
 Top = 93
 Visible = .T.
-Width = 84
+Width = 208
 DisabledBackColor = 227,227,227
-ZOrderSet = 26
-Name = "EntFornec"
+DisabledForeColor = 0,0,0
+ZOrderSet = 28
+Name = "cnpj"
 </properties>
 		<protected/>
-		<methods>PROCEDURE Init
-SwTexBox::Init()
-This.InputMask=REPLI("9",LEN(Entranota1.EntFornec))
-ENDPROC
-</methods>
+		<methods/>
 		<objcode/>
 		<ole/>
 		<ole2/>
@@ -2410,27 +2395,23 @@ Name = "NomeFor"
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3TU0JI8QX</uniqueid>
+		<uniqueid>_3TV0OMMSC</uniqueid>
 		<timestamp>1122720838</timestamp>
-		<class>swtexbox</class>
+		<class>swlabel</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
-		<baseclass>textbox</baseclass>
-		<objname>cnpj</objname>
+		<baseclass>label</baseclass>
+		<objname>lblCondPag</objname>
 		<parent>AEENTNOT_XML</parent>
 		<properties>FontSize = 8
-Value = (Forneced.ForRazao)
-Enabled = .F.
-Format = ""
-Height = 24
-Left = 378
-TabIndex = 19
-Top = 93
-Visible = .T.
-Width = 208
-DisabledBackColor = 227,227,227
-DisabledForeColor = 0,0,0
-ZOrderSet = 28
-Name = "cnpj"
+WordWrap = .T.
+Caption = "Condição Pgto."
+Height = 15
+Left = 686
+Top = 32
+Width = 90
+TabIndex = 12
+ZOrderSet = 27
+Name = "lblCondPag"
 </properties>
 		<protected/>
 		<methods/>
@@ -2449,8 +2430,8 @@ Name = "cnpj"
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3SU0ZKI1M</uniqueid>
-		<timestamp>1122599823</timestamp>
+		<uniqueid>_3TU0JZAJ5</uniqueid>
+		<timestamp>1122720838</timestamp>
 		<class>swlabel</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>label</baseclass>
@@ -2487,7 +2468,7 @@ Name = "Swlabel2"
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3TU0JZAJ6</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swtexbox</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>textbox</baseclass>
@@ -2548,7 +2529,7 @@ ENDPROC
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3TU0JZAJ7</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swtexbox</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>textbox</baseclass>
@@ -2603,8 +2584,8 @@ ENDPROC
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3SU0ZKI1M</uniqueid>
-		<timestamp>1122599823</timestamp>
+		<uniqueid>_3TU0JZAJ8</uniqueid>
+		<timestamp>1122720838</timestamp>
 		<class>swlabel</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>label</baseclass>
@@ -2641,7 +2622,7 @@ Name = "Swlabel4"
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3TV0OMMSD</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swtexbox</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>textbox</baseclass>
@@ -2686,8 +2667,94 @@ ENDPROC
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
+		<uniqueid>_5NB0YRB27</uniqueid>
+		<timestamp>1354980932</timestamp>
+		<class>swcombox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>combobox</baseclass>
+		<objname>entcod_sit</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontBold = .F.
+FontSize = 8
+ColumnCount = 1
+RowSourceType = 5
+RowSource = "CPvetorModelo"
+Value = (entrada1.entmodelo)
+ControlSource = "m.entcod_sit"
+Enabled = .F.
+Height = 24
+Left = 804
+NumberOfElements = 0
+Style = 2
+TabIndex = 9
+Top = 12
+Visible = .F.
+Width = 105
+ZOrderSet = 37
+DisabledBackColor = 227,227,227
+Name = "entcod_sit"
+</properties>
+		<protected/>
+		<methods>PROCEDURE Valid
+IF This.value=24 .or. This.Value=25
+	*ThisForm.swpagfra1.Page1.cmdImportarxml.Enabled=.T.
+ENDIF
+ENDPROC
+</methods>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1225298674</timestamp>
+		<class>swlabel</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>label</baseclass>
+		<objname>Swlabel1</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+WordWrap = .T.
+Alignment = 0
+Caption = "Série"
+Height = 15
+Left = 100
+Top = 32
+Visible = .T.
+Width = 43
+TabIndex = 6
+ZOrderSet = 25
+Name = "Swlabel1"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
 		<uniqueid>_3TU0NTVGH</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swcombox</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>combobox</baseclass>
@@ -2736,25 +2803,24 @@ ENDPROC
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3SU0ZKI1M</uniqueid>
-		<timestamp>1122599823</timestamp>
-		<class>label</class>
-		<classloc/>
+		<timestamp>1122720838</timestamp>
+		<class>swlabel</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>label</baseclass>
-		<objname>Label8</objname>
+		<objname>lblCliente</objname>
 		<parent>AEENTNOT_XML</parent>
-		<properties>FontBold = .T.
-FontSize = 8
-Alignment = 0
-Caption = "Localizado código EAN"
+		<properties>FontSize = 8
+WordWrap = .T.
+BorderStyle = 0
+Caption = "Fornecedor"
 Height = 15
-Left = 355
-Top = 364
+Left = 12
+Top = 76
 Visible = .T.
-Width = 137
-TabIndex = 39
-BackColor = 192,192,192
-ZOrderSet = 8
-Name = "Label8"
+Width = 70
+TabIndex = 15
+ZOrderSet = 19
+Name = "lblCliente"
 </properties>
 		<protected/>
 		<methods/>
@@ -2773,22 +2839,23 @@ Name = "Label8"
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_50M0SVHOL</uniqueid>
-		<timestamp>1261726866</timestamp>
+		<uniqueid>_5LY0NMVOH</uniqueid>
+		<timestamp>1354979360</timestamp>
 		<class>label</class>
 		<classloc/>
 		<baseclass>label</baseclass>
 		<objname>lblcodfab</objname>
 		<parent>AEENTNOT_XML</parent>
-		<properties>FontBold = .T.
+		<properties>AutoSize = .T.
+FontBold = .T.
 FontSize = 8
 Alignment = 0
-Caption = "Localizado código Fab."
-Height = 15
-Left = 516
-Top = 364
-Visible = .F.
-Width = 120
+Caption = "Localizado código Fornecedor."
+Height = 16
+Left = 560
+Top = 365
+Visible = .T.
+Width = 170
 TabIndex = 39
 BackColor = 192,192,192
 ZOrderSet = 8
@@ -2812,82 +2879,7 @@ Name = "lblcodfab"
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3SU0ZKI1M</uniqueid>
-		<timestamp>1262062030</timestamp>
-		<class>swlabel</class>
-		<classloc>..\..\library\swbase.vcx</classloc>
-		<baseclass>label</baseclass>
-		<objname>lbl_pedidocompra</objname>
-		<parent>AEENTNOT_XML</parent>
-		<properties>AutoSize = .T.
-FontSize = 8
-WordWrap = .T.
-Alignment = 1
-Caption = "Pedido de Compra:"
-Height = 16
-Left = 761
-Top = 14
-Visible = .F.
-Width = 105
-TabIndex = 32
-ZOrderSet = 34
-Name = "lbl_pedidocompra"
-</properties>
-		<protected/>
-		<methods/>
-		<objcode/>
-		<ole/>
-		<ole2/>
-		<reserved1/>
-		<reserved2/>
-		<reserved3/>
-		<reserved4/>
-		<reserved5/>
-		<reserved6/>
-		<reserved7/>
-		<reserved8/>
-		<user/>
-	</record>
-	<record>
-		<platform>WINDOWS</platform>
-		<uniqueid>_50R10YAFT</uniqueid>
-		<timestamp>1262062030</timestamp>
-		<class>swlabel</class>
-		<classloc>..\..\library\swbase.vcx</classloc>
-		<baseclass>label</baseclass>
-		<objname>lbl_no_pedidocompra</objname>
-		<parent>AEENTNOT_XML</parent>
-		<properties>FontSize = 11
-WordWrap = .T.
-Alignment = 0
-Caption = "000000"
-Height = 15
-Left = 876
-Top = 13
-Visible = .F.
-Width = 96
-TabIndex = 32
-ZOrderSet = 34
-Name = "lbl_no_pedidocompra"
-</properties>
-		<protected/>
-		<methods/>
-		<objcode/>
-		<ole/>
-		<ole2/>
-		<reserved1/>
-		<reserved2/>
-		<reserved3/>
-		<reserved4/>
-		<reserved5/>
-		<reserved6/>
-		<reserved7/>
-		<reserved8/>
-		<user/>
-	</record>
-	<record>
-		<platform>WINDOWS</platform>
-		<uniqueid>_3SU0ZKI1M</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swgrid</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>grid</baseclass>
@@ -2913,7 +2905,7 @@ Column1.ControlSource = "item.cprod"
 Column1.Width = 100
 Column1.ReadOnly = .T.
 Column1.Visible = .T.
-Column1.DynamicBackColor = "ThisForm.Retornarcor('nloc')"
+Column1.DynamicBackColor = "ThisForm.Retornarcor()"
 Column1.Name = "Column1"
 Column2.FontSize = 8
 Column2.ColumnOrder = 3
@@ -4324,47 +4316,8 @@ Name = "Text1"
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3UK0PMJ9A</uniqueid>
-		<timestamp>1124425515</timestamp>
-		<class>swtexbox</class>
-		<classloc>..\..\library\swbase.vcx</classloc>
-		<baseclass>textbox</baseclass>
-		<objname>arquivoxml</objname>
-		<parent>AEENTNOT_XML</parent>
-		<properties>FontSize = 8
-Alignment = 3
-Value =  
-ControlSource = "m.arquivoxml"
-Format = ""
-Height = 10
-InputMask = ""
-Left = 887
-TabIndex = 77
-Top = 113
-Visible = .F.
-Width = 13
-ZOrderSet = 46
-Name = "arquivoxml"
-</properties>
-		<protected/>
-		<methods/>
-		<objcode/>
-		<ole/>
-		<ole2/>
-		<reserved1/>
-		<reserved2/>
-		<reserved3/>
-		<reserved4/>
-		<reserved5/>
-		<reserved6/>
-		<reserved7/>
-		<reserved8/>
-		<user/>
-	</record>
-	<record>
-		<platform>WINDOWS</platform>
 		<uniqueid>_3SU0ZKI1M</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1384530478</timestamp>
 		<class>swcombut</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>commandbutton</baseclass>
@@ -4382,200 +4335,216 @@ Name = "cmdvincular"
 		<protected/>
 		<methods>PROCEDURE Click
 SELECT item
-IF NOT EOF()
-	m.recno_item=RECNO()
-	SELECT item
-	IF item.vincular=0
-		REPLACE vincular WITH 1
-	ENDIF
-	SELECT item
-	m.qTrib_x=0
-	m.vUnTrib_x=0
-	m.icms_vICMSST_x=0
-	m.icms_vbcst_x=0
-	m.vdesc_x=0
-	m.ipi_vIPI_x=0
-	m.cprod_x=''
-	m.xprod_x=''
-	m.cProdANP_x=''
-	m.ncm_x=''
-	m.total_rateio_item=0
-	m.vprod_conf=0
-	m.icms_vICMSST_conf=0
-	m.icms_vbcst_conf=0
-	m.ipi_vIPI_conf=0
-	m.tot_item_x=0
-	SCAN
-		IF item.vincular=1
-			IF EMPTY(m.cprod_x) &amp;&amp;pega estes dados sempre do primeiro selecionado
-				m.cprod_x=item.cprod
-				m.cProdANP_x=item.cProdANP
-				m.ncm_x=item.ncm
-				m.vUnTrib_x=item.vUnTrib
-				m.xprod_x=item.xprod
-			ENDIF
-			m.qTrib_x=m.qTrib_x+item.qTrib
-			m.icms_vICMSST_x=m.icms_vICMSST_x+item.icms_vICMSST
-			m.icms_vbcst_x=m.icms_vbcst_x+item.icms_vbcst
-			m.vdesc_x=m.vdesc_x+item.vdesc
-			m.ipi_vIPI_x=m.ipi_vIPI_x+item.ipi_vIPI
-			m.total_rateio_item=m.total_rateio_item+(item.qTrib*item.vUnTrib)
-			m.vprod_conf=m.vprod_conf+(item.qTrib*item.vUnTrib)
-			m.icms_vICMSST_conf=m.icms_vICMSST_conf+item.icms_vICMSST
-			m.icms_vbcst_conf=m.icms_vbcst_conf+item.icms_vbcst
-			m.ipi_vIPI_conf=m.ipi_vIPI_conf+item.ipi_vIPI
-			m.tot_item_x=item.vprod
+IF EOF()
+	=MESSAGEBOX("É necessário selecionar no item a ser vinculado!",16,CPnomesys2)
+	RETURN .f.
+ENDIF
+m.recno_item=RECNO()
+SELECT item
+IF item.vincular=0
+	REPLACE vincular WITH 1
+ENDIF
+SELECT item
+m.qTrib_x=0
+m.vUnTrib_x=0
+m.icms_vICMSST_x=0
+m.icms_vbcst_x=0
+m.vdesc_x=0
+m.ipi_vIPI_x=0
+m.cprod_x=''
+m.xprod_x=''
+m.cProdANP_x=''
+m.ncm_x=''
+*-
+m.vfrete_x=0
+m.vseg_x=0
+m.voutro_x=0
+m.vicmsdeson_x=0
+*-
+m.total_rateio_item=0
+m.vprod_conf=0
+m.icms_vICMSST_conf=0
+m.icms_vbcst_conf=0
+m.ipi_vIPI_conf=0
+*-
+
+SCAN
+	IF item.vincular=1
+		IF EMPTY(m.cprod_x) &amp;&amp;pega estes dados sempre do primeiro selecionado
+			m.cprod_x=item.cprod
+			m.cProdANP_x=item.cProdANP
+			m.ncm_x=item.ncm
+			m.vUnTrib_x=item.vUnTrib
+			m.xprod_x=item.xprod
 		ENDIF
-	ENDSCAN
-	m.valor_retorno=0
-	SELECT item
-	SET RELATION TO
-	*-Localizando o item relacionado do fornecedor
-	m.item_localizado=''
-	m.operacao_x=0
-	m.conversao_x=0
-	IF m.recno_item&gt;0
-		GO m.recno_item
+		m.qTrib_x=m.qTrib_x+item.qTrib
+		m.icms_vICMSST_x=m.icms_vICMSST_x+item.icms_vICMSST
+		m.icms_vbcst_x=m.icms_vbcst_x+item.icms_vbcst
+		m.vdesc_x=m.vdesc_x+item.vdesc
+		m.ipi_vIPI_x=m.ipi_vIPI_x+item.ipi_vIPI
+		m.total_rateio_item=m.total_rateio_item+(item.qTrib*item.vUnTrib)
+		m.vprod_conf=m.vprod_conf+(item.qTrib*item.vUnTrib)
+		m.icms_vICMSST_conf=m.icms_vICMSST_conf+item.icms_vICMSST
+		m.icms_vbcst_conf=m.icms_vbcst_conf+item.icms_vbcst
+		m.ipi_vIPI_conf=m.ipi_vIPI_conf+item.ipi_vIPI
+		*-
+		IF (.not. LEFT(CPcodigoempresa,8)$'26189084') &amp;&amp;bom destino não vai importar valor de oturas despesas
+			m.vfrete_x=m.vfrete_x+item.vfrete
+			m.vseg_x=m.vseg_x+item.vseg
+			m.voutro_x=m.voutro_x+item.voutro
+		ENDIF 	
+		m.vicmsdeson_x=m.vicmsdeson_x+item.vicmsdeson
 	ENDIF
-	m.digito_localizado=''
-	IF CPcodigoempresa="03862926000184" &amp;&amp;jrc
+ENDSCAN
+m.valor_retorno=0
+SELECT item
+SET RELATION TO
+*-Localizando o item relacionado do fornecedor
+m.item_localizado=''
+m.operacao_x=0
+m.conversao_x=0
+IF m.recno_item&gt;0
+	GO m.recno_item
+ENDIF
+m.digito_localizado=''
+
+SELECT produto
+SET ORDER TO barra
+SEEK ALLTRIM(item.ean)
+IF FOUND() .and. .not. EMPTY(item.ean)
+	m.item_localizado=produto.procodigo
+	m.digito_localizado=produto.prodigito
+ELSE
+	IF thisform.entrada_nota_info_produto_xml()
 		m.retornoloc=thisform.locprod(item.ean,item.cprod)
 		IF m.retornoloc=1 .or. m.retornoloc=3
 			m.item_localizado=produto.procodigo
 			m.digito_localizado=produto.prodigito
 		ENDIF
-	else
-		IF .not. EMPTY(item.ean)
-			SELECT produto
-			SET ORDER TO barra
-			SEEK ALLTRIM(item.ean)
-			IF FOUND()
-				m.item_localizado=produto.procodigo
-				m.digito_localizado=produto.prodigito
-			ENDIF
-		endif
-	endif	
-	IF CPcodigoempresa='71507149000100' &amp;&amp;Vitoria
-		IF CPfilialusu='01' &amp;&amp;se for loja da esquina
-			m.item_localizado=''
-			m.digito_localizado=''
-		ENDIF
+	endif
+ENDIF
+	
+IF CPcodigoempresa='71507149000100' &amp;&amp;Vitoria
+	IF CPfilialusu='01' &amp;&amp;se for loja da esquina
+		m.item_localizado=''
+		m.digito_localizado=''
 	ENDIF
-	IF EMPTY(m.item_localizado)
+ENDIF
+IF EMPTY(m.item_localizado)
+	SELECT ite_nfe
+	SET ORDER TO 2
+	SEEK cliente.clicpf_cnpj+ALLTRIM(m.cprod_x)
+	IF FOUND()
+		m.item_localizado=ite_nfe.itecodigo
+		m.operacao_x=ite_nfe.iteoperacao
+		m.conversao_x=ite_nfe.iteconversao
+	ELSE
 		SELECT ite_nfe
-		SET ORDER TO 2
-		SEEK cliente.clicpf_cnpj+ALLTRIM(m.cprod_x)
+		SET ORDER TO 3
+		SEEK SUBSTR(cliente.clicpf_cnpj,1,8)+ALLTRIM(m.cprod_x)
 		IF FOUND()
 			m.item_localizado=ite_nfe.itecodigo
 			m.operacao_x=ite_nfe.iteoperacao
 			m.conversao_x=ite_nfe.iteconversao
-		ELSE
-			SELECT ite_nfe
-			SET ORDER TO 3
-			SEEK SUBSTR(cliente.clicpf_cnpj,1,8)+ALLTRIM(m.cprod_x)
-			IF FOUND()
-				m.item_localizado=ite_nfe.itecodigo
-				m.operacao_x=ite_nfe.iteoperacao
-				m.conversao_x=ite_nfe.iteconversao
-			ENDIF	
-		ENDIF
-	ENDIF 	
-	*-
-	*-
-	m.especie_tela=1
-	IF ThisForm.entmodelo.Value=25
-		m.especie_tela=3
+		ENDIF	
 	ENDIF
-	SELECT item
-	DO FORM Aeentpro WITH 1,Thisform.Top,m.especie_tela,m.item_localizado,m.digito_localizado,m.qTrib_x,(m.total_rateio_item/m.qTrib_x),m.icms_vICMSST_x,m.vdesc_x,m.ipi_vIPI_x,m.cprod_x,m.cProdANP_x,m.ncm_x,m.total_rateio_item,m.xprod_x,m.conversao_x,m.operacao_x,m.icms_vbcst_x,m.tot_item_x TO m.valor_retorno
-	SELECT resumoe
-	SET ORDER TO codigo_f
-	SELECT item
-	SCAN
-		IF item.vincular=1
+ENDIF 	
+IF EMPTY(m.item_localizado)
+	IF CPCodempresa='34868376000134' &amp;&amp;enfim
+		If messagebox("Não foi localizado Produto. Deseja Cadastrar?",4+48,CPnomesys)=6
+			thisform.cmd_import_prod.Click()
+			m.item_localizado=RTRIM(SUBSTR(item.CPROD,1,AT("-",item.CPROD,1)-1))
+			m.digito_localizado=RTRIM(SUBSTR(item.CPROD,AT("-",item.CPROD,1)+1,LEN(item.CPROD)))
+		ENDIF
+	ELSE
+		IF thisform.entrada_nota_info_produto_xml()
+			If messagebox("Não foi localizado Produto. Deseja Cadastrar?",4+48,CPnomesys)=6
+				m.produto_ret=thisform.cmd_import_prod.Click()
+				m.item_localizado=m.produto_ret
+			ENDIF
+		endif
+	endif
+endif
+
+*-
+*-
+m.especie_tela=1
+IF ThisForm.entmodelo.Value=25
+	m.especie_tela=3
+ENDIF
+SELECT item
+DO FORM Aeentpro WITH 1,Thisform.Top,m.especie_tela,m.item_localizado,m.digito_localizado,m.qTrib_x,(m.total_rateio_item/m.qTrib_x),m.icms_vICMSST_x,m.vdesc_x,m.ipi_vIPI_x,m.cprod_x,m.cProdANP_x,m.ncm_x,m.total_rateio_item,m.xprod_x,m.conversao_x,m.operacao_x,m.icms_vbcst_x,m.vfrete_x,m.vseg_x,m.voutro_x,m.vicmsdeson_x TO m.valor_retorno
+SELECT resumoe
+SET ORDER TO codigo_f
+SELECT item
+SCAN
+	IF item.vincular=1
+		SELECT resumoe
+		SET ORDER TO codigo_f
+		SEEK ALLTRIM(m.cprod_x)
+		m.icmstpro_conf=0
+		m.ipi_conf=0
+		SCAN WHILE ALLTRIM(m.cprod_x)=ALLTRIM(resumoe.codigofabricante)
+			m.icmstpro_conf=m.icmstpro_conf+resumoe.icmstpro
+			m.ipi_conf=m.ipi_conf+resumoe.ipi
+		ENDSCAN
+		SELECT item
+		REPLACE totalvinculado WITH totalvinculado+(((item.qTrib*item.vUnTrib)/m.total_rateio_item)*m.valor_retorno)
+		REPLACE vincular WITH 0
+		REPLACE cprod_2 WITH m.cprod_x
+		REPLACE vprod_conf WITH m.vprod_conf
+		REPLACE totalvinculado_conf WITH totalvinculado_conf+m.valor_retorno
+		REPLACE icmstpro_conf WITH m.icmstpro_conf
+		REPLACE ipi_conf WITH m.ipi_conf
+		
+		IF thisform.entrada_nota_info_produto_xml()
+			m.atualiza_info=.f.
 			SELECT resumoe
-			SET ORDER TO codigo_f
 			SEEK ALLTRIM(m.cprod_x)
-			m.icmstpro_conf=0
-			m.ipi_conf=0
-			SCAN WHILE ALLTRIM(m.cprod_x)=ALLTRIM(resumoe.codigofabricante)
-				m.icmstpro_conf=m.icmstpro_conf+resumoe.icmstpro
-				m.ipi_conf=m.ipi_conf+resumoe.ipi
-			ENDSCAN
-			SELECT item
-			REPLACE totalvinculado WITH totalvinculado+(((item.qTrib*item.vUnTrib)/m.total_rateio_item)*m.valor_retorno)
-			REPLACE vincular WITH 0
-			REPLACE cprod_2 WITH m.cprod_x
-			REPLACE vprod_conf WITH m.vprod_conf
-			REPLACE totalvinculado_conf WITH totalvinculado_conf+m.valor_retorno
-			REPLACE icmstpro_conf WITH m.icmstpro_conf
-			REPLACE ipi_conf WITH m.ipi_conf
-			IF CPcodigoempresa="03862926000184" &amp;&amp;JRC
-				m.atualiza_info=.f.
-				SELECT resumoe
-				SEEK ALLTRIM(m.cprod_x)
-				SELECT PRODUTO
-				SET ORDER TO 1
-				SEEK RESUMOE.PRODUTO+RESUMOE.DIGITO
-				IF FOUND()
-					IF ALLTRIM(produto.proclassfis2)#ALLTRIM(item.ncm) AND NOT EMPTY(item.ncm)
-						m.atualiza_info=.t.
-					endif
+			SELECT PRODUTO
+			SET ORDER TO 1
+			SEEK RESUMOE.PRODUTO+RESUMOE.DIGITO
+			IF FOUND()
+				IF ALLTRIM(produto.proclassfis2)#ALLTRIM(item.ncm) AND NOT EMPTY(item.ncm)
+					m.atualiza_info=.t.
+				ENDIF
+				IF CPCodigoempresa#'26189084000147' &amp;&amp; bom destino não validar cest, elennice pediu 22/10/2020
 					IF alltrim(produto.procest)#ALLTRIM(item.cest) AND NOT EMPTY(item.cest)
 						m.atualiza_info=.t.
 					ENDIF
-					IF thisform.locprodean(item.ean)=0
-						m.atualiza_info=.t.							
-					ENDIF
-					IF m.atualiza_info=.f. .and. EMPTY(ALLTRIM(item.ean))
-						m.atualiza_info=.t.
-						SELECT produto_fornecedor
-						SET ORDER TO 2
-						SEEK RESUMOE.PRODUTO+RESUMOE.DIGITO+strzero(ALLTRIM(produto_fornecedor.pf_fornecedor),6)
-						IF FOUND()
-							SCAN WHILE produto_fornecedor.pf_procodigo=RESUMOE.PRODUTO .and. strzero(ALLTRIM(produto_fornecedor.pf_fornecedor),6)=thisform.entfornec.Value
-								IF ALLTRIM(item.cprod)=ALLTRIM(produto_fornecedor.pf_codigofornec)
-									m.atualiza_info=.f.
-								endif
-							endscan
-						ENDIF
-					endif
-					IF m.atualiza_info
-						IF MESSAGEBOX("Atenção, algumas informações cadastrais do item vinculado divergem das informações do item na nota.Deseja atualizar? ",4+16+256,CPnomesys2)=6
-							DO FORM aeatualizainfoproent with RESUMOE.PRODUTO,RESUMOE.DIGITO,item.ean,item.cest,item.ncm,item.cprod,item.xprod,thisform.entfornec.Value
-						endif
-					endif	
 				ENDIF
-				SELECT resumoe
-			endif
-		ENDIF
-	ENDSCAN
-	ThisForm.Ajustando_valores()
-	m.cprod_x=''
-	SELECT item
-	SET RELATION TO item.cprod_2 INTO resumoe
-	IF m.recno_item&gt;0
-		GO m.recno_item
-	ENDIF
-	IF CPcodigoempresa="03862926000184" &amp;&amp;JRC
-		m.foundnext=.f.
-		m.pos_temp=recno_item+1
-		DO WHILE m.pos_temp&lt;=RECCOUNT()
-			GO m.pos_temp
-			IF item.totalvinculado&gt;0 .and. item.totalvinculado&gt;=(item.vprod-item.vdesc)
-				m.pos_temp=m.pos_temp+1
-			ELSE
-				m.foundnext=.t.
-				EXIT
+				IF thisform.locprodean(item.ean)=0
+					m.atualiza_info=.t.							
+				ENDIF
+				IF m.atualiza_info=.f. &amp;&amp; .and. EMPTY(ALLTRIM(item.ean))
+					m.atualiza_info=.t.
+					SELECT produto_fornecedor
+					SET ORDER TO 2
+					SEEK RESUMOE.PRODUTO+RESUMOE.DIGITO+thisform.entfornec.value
+					IF FOUND()
+						SCAN WHILE produto_fornecedor.pf_procodigo=RESUMOE.PRODUTO .and. strzero(ALLTRIM(produto_fornecedor.pf_fornecedor),6)=thisform.entfornec.Value
+							IF ALLTRIM(item.cprod)=ALLTRIM(produto_fornecedor.pf_codigofornec)
+								m.atualiza_info=.f.
+							endif
+						endscan
+					ENDIF
+				endif
+				IF m.atualiza_info
+					IF MESSAGEBOX("Atenção, algumas informações cadastrais do item vinculado divergem das informações do item na nota.Deseja atualizar? ",4+16+256,CPnomesys2)=6
+						DO FORM aeatualizainfoproent with RESUMOE.PRODUTO,RESUMOE.DIGITO,item.ean,item.cest,item.ncm,item.cprod,item.xprod,thisform.entfornec.Value
+					endif
+				endif	
 			ENDIF
-		ENDDO
-		IF m.recno_item&gt;0 .and. m.foundnext=.f. .and. recno_item&lt;=RECCOUNT()
-			GO m.recno_item
-		ENDIF
-		thisform.tabela.Refresh()
-		THISFORM.cmdvincular.SetFocus()
-	ENDIF	
-endif
+		endif
+	ENDIF
+ENDSCAN
+ThisForm.Ajustando_valores()
+m.cprod_x=''
+SELECT item
+SET RELATION TO item.cprod_2 INTO resumoe
+IF m.recno_item&gt;0
+	GO m.recno_item
+ENDIF
 ENDPROC
 </methods>
 		<objcode/>
@@ -4657,8 +4626,125 @@ Name = "shpvinculado_parcial"
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
+		<uniqueid>_54J0JP1Y3</uniqueid>
+		<timestamp>1279674753</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>entcod_mun_orig</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Alignment = 3
+Value =  
+ControlSource = "m.entcod_mun_orig"
+Format = ""
+Height = 10
+InputMask = ""
+Left = 936
+TabIndex = 77
+Top = 84
+Visible = .F.
+Width = 13
+ZOrderSet = 46
+Name = "entcod_mun_orig"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_54J0JP1Y4</uniqueid>
+		<timestamp>1279674753</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>entcod_mun_dest</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Alignment = 3
+Value =  
+ControlSource = "m.entcod_mun_dest"
+Format = ""
+Height = 10
+InputMask = ""
+Left = 936
+TabIndex = 77
+Top = 108
+Visible = .F.
+Width = 13
+ZOrderSet = 46
+Name = "entcod_mun_dest"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
+		<uniqueid>_3SU0ZKI1M</uniqueid>
+		<timestamp>1122599823</timestamp>
+		<class>swtexbox</class>
+		<classloc>..\..\library\swbase.vcx</classloc>
+		<baseclass>textbox</baseclass>
+		<objname>arquivoxml</objname>
+		<parent>AEENTNOT_XML</parent>
+		<properties>FontSize = 8
+Alignment = 3
+Value =  
+ControlSource = "m.arquivoxml"
+Format = ""
+Height = 10
+InputMask = ""
+Left = 887
+TabIndex = 77
+Top = 113
+Visible = .F.
+Width = 13
+ZOrderSet = 46
+Name = "arquivoxml"
+</properties>
+		<protected/>
+		<methods/>
+		<objcode/>
+		<ole/>
+		<ole2/>
+		<reserved1/>
+		<reserved2/>
+		<reserved3/>
+		<reserved4/>
+		<reserved5/>
+		<reserved6/>
+		<reserved7/>
+		<reserved8/>
+		<user/>
+	</record>
+	<record>
+		<platform>WINDOWS</platform>
 		<uniqueid>_3TV0OSQ71</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1384530478</timestamp>
 		<class>swcombut</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>commandbutton</baseclass>
@@ -4676,6 +4762,10 @@ Name = "cmdexcluirvinculo"
 		<protected/>
 		<methods>PROCEDURE Click
 SELECT item
+IF EOF()
+	=MESSAGEBOX("É necessário selecionar no item a ser desvinculado!",16,CPnomesys2)
+	RETURN .f.
+ENDIF
 SET RELATION TO
 SELECT resumoe
 SET ORDER TO codigo_f
@@ -4683,11 +4773,7 @@ SEEK ALLTRIM(item.cprod)
 SCAN WHILE ALLTRIM(item.cprod)=ALLTRIM(resumoe.codigofabricante)
 	=LOOPDELE()
 	m.vlrtotal=m.vlrtotal-resumoe.TOTALITEM
-	IF resumoe.descontonom#0 .and. CPcodigoempresa="03862926000184" &amp;&amp;jrc
-		m.subtotal=m.subtotal-resumoe.subtotitem+resumoe.descontonom
-	ELSE
-		m.subtotal=m.subtotal-resumoe.subtotitem
-	endif
+	m.subtotal=m.subtotal-resumoe.subtotitem
 ENDSCAN
 SELECT item
 REPLACE totalvinculado WITH 0
@@ -5045,7 +5131,7 @@ Name = "Header1"
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3TV0URKKN</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>textbox</class>
 		<classloc/>
 		<baseclass>textbox</baseclass>
@@ -5111,7 +5197,7 @@ Name = "Header1"
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3TV0URKKP</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>textbox</class>
 		<classloc/>
 		<baseclass>textbox</baseclass>
@@ -5363,7 +5449,7 @@ Name = "Header1"
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3TV0URKKX</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>textbox</class>
 		<classloc/>
 		<baseclass>textbox</baseclass>
@@ -5428,7 +5514,7 @@ Name = "Header1"
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3TV0URKKZ</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>textbox</class>
 		<classloc/>
 		<baseclass>textbox</baseclass>
@@ -5496,7 +5582,7 @@ Name = "shperro"
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3TW0N30PG</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swcombut</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>commandbutton</baseclass>
@@ -5567,7 +5653,7 @@ ENDPROC
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3UL0ZZ33Y</uniqueid>
-		<timestamp>1278888690</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swcombut</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>commandbutton</baseclass>
@@ -5638,15 +5724,15 @@ ENDPROC
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3SU0ZKI1N</uniqueid>
-		<timestamp>1261726866</timestamp>
+		<uniqueid>_4EY0NR0LC</uniqueid>
+		<timestamp>1331189917</timestamp>
 		<class>swshape</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>shape</baseclass>
 		<objname>shpean</objname>
 		<parent>AEENTNOT_XML</parent>
 		<properties>Top = 364
-Left = 321
+Left = 330
 Height = 18
 Width = 30
 Curvature = 10
@@ -5670,53 +5756,21 @@ Name = "shpean"
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_3SU0ZKI1N</uniqueid>
-		<timestamp>1261726866</timestamp>
+		<uniqueid>_5LY0NMVOI</uniqueid>
+		<timestamp>1331190019</timestamp>
 		<class>swshape</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>shape</baseclass>
-		<objname>shpeannl</objname>
+		<objname>shcodfab</objname>
 		<parent>AEENTNOT_XML</parent>
-		<properties>Top = 364
-Left = 640
+		<properties>Top = 363
+Left = 526
 Height = 18
 Width = 30
 Curvature = 10
-BackColor = 252,255,191
-Name = "shpeannl"
-</properties>
-		<protected/>
-		<methods/>
-		<objcode/>
-		<ole/>
-		<ole2/>
-		<reserved1/>
-		<reserved2/>
-		<reserved3/>
-		<reserved4/>
-		<reserved5/>
-		<reserved6/>
-		<reserved7/>
-		<reserved8/>
-		<user/>
-	</record>
-	<record>
-		<platform>WINDOWS</platform>
-		<uniqueid>_4ZO0PJ352</uniqueid>
-		<timestamp>1261726866</timestamp>
-		<class>swshape</class>
-		<classloc>..\..\library\swbase.vcx</classloc>
-		<baseclass>shape</baseclass>
-		<objname>shpeanodc</objname>
-		<parent>AEENTNOT_XML</parent>
-		<properties>Top = 364
-Left = 835
-Height = 18
-Width = 30
-Curvature = 10
-Visible = .F.
-BackColor = 240,159,132
-Name = "shpeanodc"
+Visible = .T.
+BackColor = 164,255,164
+Name = "shcodfab"
 </properties>
 		<protected/>
 		<methods/>
@@ -5736,14 +5790,14 @@ Name = "shpeanodc"
 	<record>
 		<platform>WINDOWS</platform>
 		<uniqueid>_3SU0ZKI1M</uniqueid>
-		<timestamp>1331190132</timestamp>
+		<timestamp>1354980932</timestamp>
 		<class>swcombut</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
 		<baseclass>commandbutton</baseclass>
 		<objname>cmd_verinfoprod</objname>
 		<parent>AEENTNOT_XML</parent>
-		<properties>Top = 130
-Left = 845
+		<properties>Top = 131
+Left = 841
 Height = 31
 Width = 151
 FontSize = 8
@@ -5779,24 +5833,43 @@ ENDPROC
 	</record>
 	<record>
 		<platform>WINDOWS</platform>
-		<uniqueid>_50M0SVHOM</uniqueid>
-		<timestamp>1261726866</timestamp>
-		<class>swshape</class>
+		<uniqueid>_5LY0OYUCG</uniqueid>
+		<timestamp>1354980932</timestamp>
+		<class>swcombut</class>
 		<classloc>..\..\library\swbase.vcx</classloc>
-		<baseclass>shape</baseclass>
-		<objname>shcodfab</objname>
+		<baseclass>commandbutton</baseclass>
+		<objname>cmd_import_prod</objname>
 		<parent>AEENTNOT_XML</parent>
-		<properties>Top = 364
-Left = 482
-Height = 18
-Width = 30
-Curvature = 10
+		<properties>Top = 361
+Left = 844
+Height = 31
+Width = 151
+FontSize = 8
+Caption = "Cad. Produto igual a Nota"
+TabIndex = 35
 Visible = .F.
-BackColor = 164,255,164
-Name = "shcodfab"
+Name = "cmd_import_prod"
 </properties>
 		<protected/>
-		<methods/>
+		<methods>PROCEDURE Click
+SELECT item
+IF EOF()
+	=MESSAGEBOX("Clique em um item.",0,CPnomesys2)
+	RETURN .f.
+endif
+STORE "" TO m.produto_ret
+IF item.ean_localizado&gt;0
+	=MESSAGEBOX("Produto já localizado.",0,CPnomesys2)
+	RETURN .f.
+ENDIF
+IF CPCodempresa='34868376000134' &amp;&amp;enfim
+	thisform.cadastro_produto_transf()
+ELSE
+	DO FORM aecadpro WITH .f.,.f.,.f.,item.xml_item,thisform.cnpj.value TO m.produto_ret
+ENDIF
+RETURN m.produto_ret
+ENDPROC
+</methods>
 		<objcode/>
 		<ole/>
 		<ole2/>
